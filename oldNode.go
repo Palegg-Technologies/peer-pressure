@@ -20,6 +20,9 @@ import (
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 )
 
+const TCPProtocolID = protocol.ID("tcp")
+const FileProtocolID = protocol.ID("/file/1.0.0")
+
 type oldNodeMenuModel struct {
 	name    string
 	cursor  int
@@ -131,6 +134,7 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 		panic(err)
 	}
 	defer h.Close()
+	h.SetStreamHandler(TCPProtocolID, handleStream)
 
 	f, err := os.Open(nodeDir)
 	if err != nil {
@@ -168,7 +172,8 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 				log.Println("R Failed connecting to ", peer.ID.Pretty(), ", error:", err)
 			} else {
 				log.Println("R Connected to peer:", peer.ID.Pretty())
-				stream, _ := h.NewStream(ctx, peer.ID, protocol.ID("/file/1.0.0"))
+
+				stream, _ := h.NewStream(ctx, peer.ID, TCPProtocolID)
 				rw := bufio.NewReader(stream)
 
 				go readData(rw, saveFilePath)
@@ -181,7 +186,8 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 }
 
 func readData(rw *bufio.Reader, saveFilePath string) {
-	f, _ := os.Open(saveFilePath)
+	f, _ := os.Create(saveFilePath)
+	defer f.Close()
 	writer := bufio.NewWriter(f)
 	for {
 		str, err := rw.ReadByte()
@@ -192,9 +198,13 @@ func readData(rw *bufio.Reader, saveFilePath string) {
 			fmt.Println("Error reading from buffer")
 			panic(err)
 		}
-
-		writer.WriteByte(str)
+		fmt.Println(str)
+		err = writer.WriteByte(str)
+		if err != nil {
+			log.Println(err)
+		}
 	}
+	writer.Flush()
 }
 
 func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
@@ -255,14 +265,16 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			log.Println("S Failed connecting to ", peer.ID.Pretty(), ", error:", err)
 		} else {
 			log.Println("S Connected to:", peer.ID.Pretty())
-			h.SetStreamHandler(protocol.ID("tcp"), handleStream)
-			stream, err := h.NewStream(ctx, peer.ID, protocol.ID("tcp"))
+			stream, err := h.NewStream(ctx, peer.ID, TCPProtocolID)
 			if err != nil {
 				log.Panicln(err)
 			}
 			rw := bufio.NewWriter(stream)
 
-			go writeData(rw, sendFilePath)
+			go func() {
+				writeData(rw, sendFilePath)
+				stream.Close()
+			}()
 		}
 	}
 }
@@ -270,9 +282,9 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 func handleStream(stream network.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
-	rw := bufio.NewWriter(stream)
+	rw := bufio.NewReader(stream)
 
-	go writeData(rw, "xyz")
+	go readData(rw, "xyz")
 
 	// 'stream' will stay open until you close it (or the other side closes it).
 }
@@ -284,7 +296,9 @@ func writeData(rw *bufio.Writer, sharedFilePath string) {
 
 	for {
 		sendData, err := stdReader.ReadByte()
-		if err != nil {
+		if err == io.EOF {
+			break
+		} else if err != nil {
 			log.Println("Error reading from stdin")
 			panic(err)
 		}

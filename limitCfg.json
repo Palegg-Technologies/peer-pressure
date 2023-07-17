@@ -1,27 +1,25 @@
 {
-    "System":  {
-      "StreamsInbound": 4096,
-      "StreamsOutbound": 32768,
-      "Conns": 64000,
-      "ConnsInbound": 512,
-      "ConnsOutbound": 32768,
-      "FD": 64000
-    },
-    "Transient": {
-      "StreamsInbound": 4096,
-      "StreamsOutbound": 32768,
-      "ConnsInbound": 512,
-      "ConnsOutbound": 32768,
-      "FD": 64000
-    },
-  
-    "ProtocolDefault":{
-      "StreamsInbound": 1024,
-      "StreamsOutbound": 32768
-    },
-  
-    "ServiceDefault":{
-      "StreamsInbound": 2048,
-      "StreamsOutbound": 32768
-    }
+  "System": {
+    "StreamsInbound": 4096,
+    "StreamsOutbound": 32768,
+    "Conns": 64000,
+    "ConnsInbound": 512,
+    "ConnsOutbound": 32768,
+    "FD": 64000
+  },
+  "Transient": {
+    "StreamsInbound": 4096,
+    "StreamsOutbound": 32768,
+    "ConnsInbound": 512,
+    "ConnsOutbound": 32768,
+    "FD": 64000
+  },
+  "ProtocolDefault": {
+    "StreamsInbound": 1024,
+    "StreamsOutbound": 32768
+  },
+  "ServiceDefault": {
+    "StreamsInbound": 2048,
+    "StreamsOutbound": 32768
   }
+}

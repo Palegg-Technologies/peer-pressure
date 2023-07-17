@@ -16,3 +16,6 @@
 log
 nodes
 *._test
+testdir/
+peer-pressure
+.DS_Store

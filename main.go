@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -39,8 +41,9 @@ var (
 	}
 
 	crrNode = oldNodeMenuModel{
-		name:    "test",
-		choices: []string{"Send", "Receive"},
+		name:       "test",
+		choices:    []string{"Send", "Receive"},
+		filepicker: filepicker.New(),
 	}
 )
 
@@ -62,12 +65,18 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
-	return nil
+	return crrNode.filepicker.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	var cmds []tea.Cmd
+
+	switch msg.(type) {
+	case tea.WindowSizeMsg:
+		crrNode.filepicker, cmd = crrNode.filepicker.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	switch m.state {
 	case newNodeForm:
@@ -75,6 +84,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case oldNodeMenu:
 		return crrNode.Update(&m, msg)
+
+	case sendFileExplorer:
+
+		crrNode.filepicker, cmd = crrNode.filepicker.Update(msg)
+
+		// Did the user select a file?
+		if didSelect, path := crrNode.filepicker.DidSelectFile(msg); didSelect {
+			sendFile(context.TODO(), crrNode.name, path)
+		}
+		return m, cmd
 
 	default:
 		switch msg := msg.(type) {
@@ -171,7 +190,8 @@ func (m model) View() string {
 		s += crrNode.View()
 
 	case sendFileExplorer:
-		tea.Println("Not yet implemented")
+		s += "\n\n" + crrNode.filepicker.View()
+		log.Println(crrNode.filepicker.CurrentDirectory, crrNode.filepicker.AutoHeight)
 
 	case receiveFileMenu:
 		tea.Println("Not yet implemented")
@@ -183,6 +203,8 @@ func (m model) View() string {
 
 func initialModel() model {
 	choices := []string{"Create new node"}
+
+	crrNode.filepicker.CurrentDirectory, _ = os.UserHomeDir()
 
 	err := os.MkdirAll("./nodes", os.ModePerm)
 	if err != nil {

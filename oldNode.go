@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -24,9 +25,10 @@ const TCPProtocolID = protocol.ID("tcp")
 const FileProtocolID = protocol.ID("/file/1.0.0")
 
 type oldNodeMenuModel struct {
-	name    string
-	cursor  int
-	choices []string
+	name       string
+	cursor     int
+	choices    []string
+	filepicker filepicker.Model
 }
 
 func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -70,8 +72,8 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 
 			switch choice {
 			case "Send":
-				// parent.state++
-				sendFile(context.Background(), m.name, "share_me._test")
+				parent.state++
+				// sendFile(context.Background(), m.name, m.filepicker.FileSelected)
 
 			case "Receive":
 				// parent.state += 2

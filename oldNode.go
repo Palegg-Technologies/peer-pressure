@@ -7,15 +7,19 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
-	util "github.com/Azanul/peer-pressure/pkg/util"
+	"github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
@@ -268,4 +272,44 @@ func handleStream(stream network.Stream) {
 	go util.ReadFromStream(rw, "xyz")
 
 	// 'stream' will stay open until you close it (or the other side closes it).
+}
+
+func initDHT(ctx context.Context, h host.Host, peerDir string, topicNameFlag string) *dht.IpfsDHT {
+	// Start a DHT, for use in peer discovery. We can't just make a new DHT
+	// client because we want each peer to maintain its own local copy of the
+	// DHT, so that the bootstrapping node of the DHT can go down without
+	// inhibiting future peer discovery.
+	kademliaDHT, err := dht.New(ctx, h)
+	if err != nil {
+		panic(err)
+	}
+	if err = kademliaDHT.Bootstrap(ctx); err != nil {
+		panic(err)
+	}
+
+	file, err := os.OpenFile(filepath.Join(peerDir, topicNameFlag), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+	if err != nil {
+		log.Panicln(err)
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+
+	var wg sync.WaitGroup
+	log.Println(dht.DefaultBootstrapPeers)
+	for _, peerAddr := range dht.DefaultBootstrapPeers {
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := h.Connect(ctx, *peerinfo); err != nil {
+				log.Println("Bootstrap warning:", err)
+			} else {
+				log.Println("Connection established with bootstrap node:", *peerinfo)
+				writer.WriteString(peerAddr.String())
+			}
+		}()
+	}
+	wg.Wait()
+
+	return kademliaDHT
 }

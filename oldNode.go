@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p"
@@ -68,7 +69,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
 			choice := m.choices[m.cursor]
-			parent.Tabs = append(parent.Tabs, TabStyles[len(parent.Tabs)].Render(choice))
+			parent.Tabs = append(parent.Tabs, tui.TabStyles[len(parent.Tabs)].Render(choice))
 
 			switch choice {
 			case "Send":
@@ -106,7 +107,7 @@ func (m oldNodeMenuModel) View() string {
 
 	// The footer
 	footer := ""
-	s += footerStyle.Render(footer)
+	s += tui.FooterStyle.Render(footer)
 
 	// Send the UI for rendering
 	return s

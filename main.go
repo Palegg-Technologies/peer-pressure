@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,9 +14,6 @@ import (
 )
 
 var (
-	headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4CC9F0"))
-	footerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4CC9F0"))
-
 	TabToI = map[string]int{
 		"Main Menu":       0,
 		"Create new node": 1,
@@ -24,13 +22,6 @@ var (
 	TabChoices = [][]string{
 		{},
 		{"Send", "Receive"},
-	}
-
-	tabStyle  = lipgloss.NewStyle().Padding(0, 2)
-	TabStyles = []lipgloss.Style{
-		tabStyle.Copy().Background(lipgloss.Color("#B5179E")),
-		tabStyle.Copy().Background(lipgloss.Color("#05A7E0")),
-		tabStyle.Background(lipgloss.Color("#560BAD")),
 	}
 
 	nodeCreate = createFormModel{
@@ -130,7 +121,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// the selected state for the item that the cursor is pointing at.
 			case "enter", " ":
 				choice := m.choices[m.cursor]
-				m.Tabs = append(m.Tabs, TabStyles[len(m.Tabs)].Render(choice))
+				m.Tabs = append(m.Tabs, tui.TabStyles[len(m.Tabs)].Render(choice))
 
 				if choice == "Create new node" {
 					m.state++
@@ -156,7 +147,7 @@ func (m model) View() string {
 	switch m.state {
 	case mainMenu:
 		// The header
-		header := headerStyle.Render("Create new node or select an already existing one\n")
+		header := tui.HeaderStyle.Render("Create new node or select an already existing one\n")
 
 		mainChoices := ""
 		// Iterate over our choices
@@ -181,7 +172,7 @@ func (m model) View() string {
 			footer = "\nPress ◀ / Backspace to go back"
 		}
 		footer += "\nPress q to quit.\n"
-		s += footerStyle.Render(footer)
+		s += tui.FooterStyle.Render(footer)
 
 	case newNodeForm:
 		s += nodeCreate.View()
@@ -230,7 +221,7 @@ func initialModel() model {
 
 	mainModel := model{
 		choices: choices,
-		Tabs:    []string{TabStyles[0].Render("Main Menu")},
+		Tabs:    []string{tui.TabStyles[0].Render("Main Menu")},
 	}
 	return mainModel
 }

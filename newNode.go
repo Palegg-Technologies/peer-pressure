@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -20,16 +20,6 @@ import (
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
-)
-
-const (
-	hotPink  = lipgloss.Color("#FF06B7")
-	darkGray = lipgloss.Color("#767676")
-)
-
-var (
-	inputStyle    = lipgloss.NewStyle().Foreground(hotPink)
-	continueStyle = lipgloss.NewStyle().Foreground(darkGray)
 )
 
 type createFormModel struct {
@@ -106,12 +96,12 @@ func (m createFormModel) View() string {
 
  %s
 `,
-		inputStyle.Width(30).Render("Name"),
+		tui.NNInputStyle.Width(30).Render("Name"),
 		m.inputs[0].View(),
-		inputStyle.Width(30).Render("Rendezvous"),
+		tui.NNInputStyle.Width(30).Render("Rendezvous"),
 		m.inputs[1].View(),
-		continueStyle.Render("Continue ->"),
-	) + "\n" + footerStyle.Render(footer)
+		tui.NNContinueStyle.Render("Continue ->"),
+	) + "\n" + tui.FooterStyle.Render(footer)
 }
 
 func createNewNode(name string, rendezvous string, opt int) string {

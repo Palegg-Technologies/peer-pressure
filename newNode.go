@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	util "github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -153,38 +154,19 @@ func createNewNode(name string, rendezvous string, opt int) string {
 	if err != nil {
 		panic(err)
 	}
-	appendStringToFile(filepath.Join(peerDir, "rsa.priv"), string(privBytes))
+	util.AppendStringToFile(filepath.Join(peerDir, "rsa.priv"), string(privBytes))
 
 	// write public key
 	pubBytes, err := crypto.MarshalPublicKey(pubKey)
 	if err != nil {
 		panic(err)
 	}
-	appendStringToFile(filepath.Join(peerDir, "rsa.pub"), string(pubBytes))
+	util.AppendStringToFile(filepath.Join(peerDir, "rsa.pub"), string(pubBytes))
 
 	// discover peers
 	go discoverPeers(context.Background(), node, peerDir, rendezvous)
 
 	return name
-}
-
-func appendStringToFile(path string, content string) {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer file.Close()
-
-	writer := bufio.NewWriter(file)
-	_, err = writer.WriteString(content)
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	err = writer.Flush()
-	if err != nil {
-		log.Fatalln(err)
-	}
 }
 
 func initDHT(ctx context.Context, h host.Host, peerDir string, topicNameFlag string) *dht.IpfsDHT {

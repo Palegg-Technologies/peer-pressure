@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	util "github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
@@ -179,35 +179,13 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 				stream, _ := h.NewStream(ctx, peer.ID, TCPProtocolID)
 				rw := bufio.NewReader(stream)
 
-				go readData(rw, saveFilePath)
+				go util.ReadFromStream(rw, saveFilePath)
 			}
 		}
 		log.Printf("Receiver wait round: %d", i)
 		time.Sleep(time.Duration(5) * time.Second)
 		i++
 	}
-}
-
-func readData(rw *bufio.Reader, saveFilePath string) {
-	f, _ := os.Create(saveFilePath)
-	defer f.Close()
-	writer := bufio.NewWriter(f)
-	for {
-		str, err := rw.ReadByte()
-		if err == io.EOF {
-			log.Printf("%s done writing", saveFilePath)
-			break
-		} else if err != nil {
-			fmt.Println("Error reading from buffer")
-			panic(err)
-		}
-		fmt.Println(str)
-		err = writer.WriteByte(str)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	writer.Flush()
 }
 
 func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
@@ -275,7 +253,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			rw := bufio.NewWriter(stream)
 
 			go func() {
-				writeData(rw, sendFilePath)
+				util.WriteToStream(rw, sendFilePath)
 				stream.Close()
 			}()
 		}
@@ -287,36 +265,7 @@ func handleStream(stream network.Stream) {
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReader(stream)
 
-	go readData(rw, "xyz")
+	go util.ReadFromStream(rw, "xyz")
 
 	// 'stream' will stay open until you close it (or the other side closes it).
-}
-
-func writeData(rw *bufio.Writer, sharedFilePath string) {
-	f, _ := os.Open(sharedFilePath)
-	stdReader := bufio.NewReader(f)
-	defer f.Close()
-
-	for {
-		sendData, err := stdReader.ReadByte()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Println("Error reading from stdin")
-			panic(err)
-		}
-
-		log.Println(sendData)
-		err = rw.WriteByte(sendData)
-		if err != nil {
-			log.Println("Error writing to buffer")
-			panic(err)
-		}
-		log.Println(rw.Available())
-		err = rw.Flush()
-		if err != nil {
-			log.Println("Error flushing buffer")
-			panic(err)
-		}
-	}
 }

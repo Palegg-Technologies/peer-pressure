@@ -6,11 +6,13 @@ require (
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/libp2p/go-libp2p v0.24.2
 	github.com/libp2p/go-libp2p-kad-dht v0.20.0
+	github.com/multiformats/go-multiaddr v0.8.0
 )
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -25,7 +27,6 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.1 // indirect
-	github.com/multiformats/go-multiaddr v0.8.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.6.1 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	go.uber.org/dig v1.15.0 // indirect

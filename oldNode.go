@@ -13,6 +13,7 @@ import (
 	"github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -34,6 +35,7 @@ type oldNodeMenuModel struct {
 	cursor     int
 	choices    []string
 	filepicker filepicker.Model
+	progress   progress.Model
 }
 
 func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cmd) {

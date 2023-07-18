@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -35,6 +36,7 @@ var (
 		name:       "test",
 		choices:    []string{"Send", "Receive"},
 		filepicker: filepicker.New(),
+		progress:   progress.New(progress.WithDefaultGradient()),
 	}
 )
 
@@ -45,6 +47,7 @@ const (
 	newNodeForm
 	oldNodeMenu
 	sendFileExplorer
+	sendLoader
 	receiveFileMenu
 )
 
@@ -59,32 +62,41 @@ func (m model) Init() tea.Cmd {
 	return crrNode.filepicker.Init()
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		crrNode.filepicker, cmd = crrNode.filepicker.Update(msg)
+		cmds = append(cmds, cmd)
+
+	case progress.FrameMsg:
+		progressModel, cmd := crrNode.progress.Update(msg)
+		crrNode.progress = progressModel.(progress.Model)
 		cmds = append(cmds, cmd)
 	}
 
 	switch m.state {
 	case newNodeForm:
-		return nodeCreate.Update(&m, msg, m.cursor)
+		return nodeCreate.Update(m, msg, m.cursor)
 
 	case oldNodeMenu:
-		return crrNode.Update(&m, msg)
+		return crrNode.Update(m, msg)
 
 	case sendFileExplorer:
-
 		crrNode.filepicker, cmd = crrNode.filepicker.Update(msg)
 
 		// Did the user select a file?
 		if didSelect, path := crrNode.filepicker.DidSelectFile(msg); didSelect {
 			sendFile(context.TODO(), crrNode.name, path)
+			m.state++
 		}
 		return m, cmd
+
+	case sendLoader:
+		cmds = append(cmds, crrNode.progress.IncrPercent(0.01))
+		log.Println(cmds)
 
 	default:
 		switch msg := msg.(type) {
@@ -130,10 +142,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.state += 2
 					crrNode.name = choice
 				}
-
 			}
 		}
 	}
+	log.Println(cmds)
 
 	// Return the updated model to the Bubble Tea runtime for processing.
 	// Note that we're not returning a command.
@@ -183,6 +195,9 @@ func (m model) View() string {
 	case sendFileExplorer:
 		s += "\n\n" + crrNode.filepicker.View()
 		log.Println(crrNode.filepicker.CurrentDirectory, crrNode.filepicker.AutoHeight)
+
+	case sendLoader:
+		s += "\n\n" + crrNode.progress.View()
 
 	case receiveFileMenu:
 		tea.Println("Not yet implemented")
@@ -236,7 +251,7 @@ func main() {
 
 	// starting our program
 	m := initialModel()
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	if _, err := tea.NewProgram(&m).Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}

@@ -141,7 +141,14 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 		panic(err)
 	}
 	defer h.Close()
-	h.SetStreamHandler(TCPProtocolID, handleStream)
+	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
+		// Create a buffer stream for non blocking read and write.
+		rw := bufio.NewReader(stream)
+
+		go util.ReadFromStream(rw, saveFilePath)
+
+		// 'stream' will stay open until you close it (or the other side closes it).
+	})
 
 	f, err := os.Open(nodeDir)
 	if err != nil {
@@ -179,11 +186,6 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 				log.Println("R Failed connecting to ", peer.ID.Pretty(), ", error:", err)
 			} else {
 				log.Println("R Connected to peer:", peer.ID.Pretty())
-
-				stream, _ := h.NewStream(ctx, peer.ID, TCPProtocolID)
-				rw := bufio.NewReader(stream)
-
-				go util.ReadFromStream(rw, saveFilePath)
 			}
 		}
 		log.Printf("Receiver wait round: %d", i)
@@ -262,16 +264,6 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			}()
 		}
 	}
-}
-
-func handleStream(stream network.Stream) {
-
-	// Create a buffer stream for non blocking read and write.
-	rw := bufio.NewReader(stream)
-
-	go util.ReadFromStream(rw, "xyz")
-
-	// 'stream' will stay open until you close it (or the other side closes it).
 }
 
 func initDHT(ctx context.Context, h host.Host, peerDir string, topicNameFlag string) *dht.IpfsDHT {

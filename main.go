@@ -95,8 +95,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case sendLoader:
-		cmds = append(cmds, crrNode.progress.IncrPercent(0.01))
-		log.Println(cmds)
+		if crrNode.progress.Percent() == 1 {
+			m.state = 0
+			crrNode.progress.SetPercent(0)
+		} else {
+			cmds = append(cmds, crrNode.progress.IncrPercent(0.01))
+		}
 
 	default:
 		switch msg := msg.(type) {
@@ -145,7 +149,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	log.Println(cmds)
 
 	// Return the updated model to the Bubble Tea runtime for processing.
 	// Note that we're not returning a command.

@@ -98,6 +98,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if crrNode.progress.Percent() == 1 {
 			m.state = 0
 			crrNode.progress.SetPercent(0)
+			m.Tabs = m.Tabs[:1]
 		} else {
 			cmds = append(cmds, crrNode.progress.IncrPercent(0.01))
 		}

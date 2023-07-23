@@ -84,7 +84,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 
 			case "Receive":
 				// parent.state += 2
-				receiveFile(context.Background(), m.name, "nodes/shared_1.txt")
+				receiveFile(context.Background(), m.name)
 			}
 
 		}
@@ -119,7 +119,7 @@ func (m oldNodeMenuModel) View() string {
 	return s
 }
 
-func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
+func receiveFile(ctx context.Context, nodeName string) {
 	nodeDir := filepath.Join("nodes", nodeName)
 	prvBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.priv"))
 	prvKey, _ := crypto.UnmarshalPrivateKey(prvBytes)
@@ -147,7 +147,7 @@ func receiveFile(ctx context.Context, nodeName string, saveFilePath string) {
 		// Create a buffer stream for non blocking read and write.
 		rw := bufio.NewReader(stream)
 
-		go util.ReadFromStream(rw, saveFilePath)
+		go util.ReadFromStream(rw, "nodes/saveFilePath")
 
 		// 'stream' will stay open until you close it (or the other side closes it).
 	})

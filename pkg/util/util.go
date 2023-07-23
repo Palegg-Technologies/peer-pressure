@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const chunkSize = 2048
+
 func AppendStringToFile(path string, content string) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
@@ -30,9 +32,11 @@ func AppendStringToFile(path string, content string) {
 func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
 	f, _ := os.Create(saveFilePath)
 	defer f.Close()
+
+	str := make([]byte, 2048)
 	writer := bufio.NewWriter(f)
 	for {
-		str, err := rw.ReadByte()
+		_, err := rw.Read(str)
 		if err == io.EOF {
 			log.Printf("%s done writing", saveFilePath)
 			break
@@ -40,8 +44,7 @@ func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
 			fmt.Println("Error reading from buffer")
 			panic(err)
 		}
-		fmt.Println(str)
-		err = writer.WriteByte(str)
+		_, err = writer.Write(str)
 		if err != nil {
 			log.Println(err)
 		}
@@ -51,11 +54,12 @@ func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
 
 func WriteToStream(rw *bufio.Writer, sharedFilePath string) {
 	f, _ := os.Open(sharedFilePath)
-	stdReader := bufio.NewReader(f)
 	defer f.Close()
 
+	sendData := make([]byte, chunkSize)
+
 	for {
-		sendData, err := stdReader.ReadByte()
+		_, err := f.Read(sendData)
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -64,7 +68,7 @@ func WriteToStream(rw *bufio.Writer, sharedFilePath string) {
 		}
 
 		log.Println(sendData)
-		err = rw.WriteByte(sendData)
+		_, err = rw.Write(sendData)
 		if err != nil {
 			log.Println("Error writing to buffer")
 			panic(err)

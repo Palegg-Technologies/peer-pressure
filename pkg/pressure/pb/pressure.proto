@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pressure.pb;
+
+option go_package = "./pkg/pressure/pb";
+
+message Chunk {
+    optional int32 n_parts = 1; // No. of chucks in the file this chunk belongs to
+    int32 index = 2; // Index of the chunk being sent
+    bytes data = 3;
+}
+
+message ChunkRequest {
+    int32 index = 1; // Index of the chunk that we want
+}

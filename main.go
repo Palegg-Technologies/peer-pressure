@@ -198,7 +198,6 @@ func (m model) View() string {
 
 	case sendFileExplorer:
 		s += "\n\n" + crrNode.filepicker.View()
-		log.Println(crrNode.filepicker.CurrentDirectory, crrNode.filepicker.AutoHeight)
 
 	case sendLoader:
 		s += "\n\n" + crrNode.progress.View()

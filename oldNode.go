@@ -147,7 +147,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		// Create a buffer stream for non blocking read and write.
 		rw := bufio.NewReader(stream)
 
-		go util.ReadFromStream(rw, "nodes/saveFilePath")
+		go util.ReadFromStream(rw, "nodes/saveFilePath.txt")
 
 		// 'stream' will stay open until you close it (or the other side closes it).
 	})
@@ -172,11 +172,12 @@ func receiveFile(ctx context.Context, nodeName string) {
 	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
 	dutil.Advertise(ctx, routingDiscovery, topicNameFlag)
 
-	time.Sleep(time.Duration(1) * time.Minute)
 	peerChan, err := routingDiscovery.FindPeers(ctx, topicNameFlag)
 	if err != nil {
 		panic(err)
 	}
+
+	log.Printf("R Peer ID: %s\n\n", h.ID())
 	i := 0
 	for {
 		for peer := range peerChan {
@@ -245,6 +246,8 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 	if err != nil {
 		panic(err)
 	}
+
+	log.Printf("S Peer ID: %s\n\n", h.ID())
 	for peer := range peerChan {
 		if peer.ID == h.ID() {
 			continue // No self connection

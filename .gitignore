@@ -19,3 +19,4 @@ nodes
 testdir/
 peer-pressure
 .DS_Store
+protoc/

@@ -6,9 +6,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+
+	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
+	"google.golang.org/protobuf/proto"
 )
 
-const chunkSize = 2048
+const chunkSize = 4096
 
 func AppendStringToFile(path string, content string) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
@@ -30,36 +34,53 @@ func AppendStringToFile(path string, content string) {
 }
 
 func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
-	f, _ := os.Create(saveFilePath)
+	saveFilePath, _ = filepath.Abs(saveFilePath)
+	f, err := os.Create(saveFilePath)
+	if err != nil {
+		log.Panicln(err)
+	}
 	defer f.Close()
 
-	str := make([]byte, 2048)
 	writer := bufio.NewWriter(f)
 	for {
-		_, err := rw.Read(str)
-		if err == io.EOF {
+		str, err := io.ReadAll(rw)
+		if err == io.EOF || len(str) == 0 {
 			log.Printf("%s done writing", saveFilePath)
 			break
 		} else if err != nil {
 			fmt.Println("Error reading from buffer")
 			panic(err)
 		}
-		_, err = writer.Write(str)
+		chunk := pb.Chunk{}
+		err = proto.Unmarshal(str, &chunk)
+		if err != nil {
+			log.Println("Error unmarshaling proto chunk")
+			panic(err)
+		}
+
+		log.Println(str)
+		log.Println(chunk.Data)
+		log.Println()
+		_, err = writer.Write(chunk.Data)
 		if err != nil {
 			log.Println(err)
 		}
 	}
-	writer.Flush()
+	err = writer.Flush()
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func WriteToStream(rw *bufio.Writer, sharedFilePath string) {
 	f, _ := os.Open(sharedFilePath)
 	defer f.Close()
 
-	sendData := make([]byte, chunkSize)
+	data := make([]byte, chunkSize)
 
+	var partNum int32 = 0
 	for {
-		_, err := f.Read(sendData)
+		_, err := f.Read(data)
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -67,7 +88,16 @@ func WriteToStream(rw *bufio.Writer, sharedFilePath string) {
 			panic(err)
 		}
 
-		log.Println(sendData)
+		partNum++
+		chunk := &pb.Chunk{
+			Index: partNum,
+			Data:  data,
+		}
+		sendData, err := proto.Marshal(chunk)
+		if err != nil {
+			log.Println("Error marshaling proto chunk")
+			panic(err)
+		}
 		_, err = rw.Write(sendData)
 		if err != nil {
 			log.Println("Error writing to buffer")

@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
 	"google.golang.org/protobuf/proto"
@@ -33,19 +32,12 @@ func AppendStringToFile(path string, content string) {
 	}
 }
 
-func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
-	saveFilePath, _ = filepath.Abs(saveFilePath)
-	f, err := os.Create(saveFilePath)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer f.Close()
-
-	writer := bufio.NewWriter(f)
+func StreamToFile(rw *bufio.Reader, file *os.File) {
+	writer := bufio.NewWriter(file)
 	for {
 		str, err := io.ReadAll(rw)
 		if err == io.EOF || len(str) == 0 {
-			log.Printf("%s done writing", saveFilePath)
+			log.Printf("%s done writing", file.Name())
 			break
 		} else if err != nil {
 			fmt.Println("Error reading from buffer")
@@ -66,21 +58,18 @@ func ReadFromStream(rw *bufio.Reader, saveFilePath string) {
 			log.Println(err)
 		}
 	}
-	err = writer.Flush()
+	err := writer.Flush()
 	if err != nil {
 		log.Panic(err)
 	}
 }
 
-func WriteToStream(rw *bufio.Writer, sharedFilePath string) {
-	f, _ := os.Open(sharedFilePath)
-	defer f.Close()
-
+func FileToStream(rw *bufio.Writer, file *os.File) {
 	data := make([]byte, chunkSize)
 
 	var partNum int32 = 0
 	for {
-		_, err := f.Read(data)
+		_, err := file.Read(data)
 		if err == io.EOF {
 			break
 		} else if err != nil {

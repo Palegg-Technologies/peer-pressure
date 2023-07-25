@@ -147,7 +147,13 @@ func receiveFile(ctx context.Context, nodeName string) {
 		// Create a buffer stream for non blocking read and write.
 		rw := bufio.NewReader(stream)
 
-		go util.ReadFromStream(rw, "nodes/saveFilePath.txt")
+		f, err := os.Create("nodes/saveFilePath.txt")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		go util.StreamToFile(rw, f)
 
 		// 'stream' will stay open until you close it (or the other side closes it).
 	})
@@ -264,7 +270,12 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			rw := bufio.NewWriter(stream)
 
 			go func() {
-				util.WriteToStream(rw, sendFilePath)
+				f, err := os.Open(sendFilePath)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				util.FileToStream(rw, f)
 				stream.Close()
 			}()
 		}

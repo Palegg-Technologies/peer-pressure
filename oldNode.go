@@ -147,15 +147,22 @@ func receiveFile(ctx context.Context, nodeName string) {
 		// Create a buffer stream for non blocking read and write.
 		rw := bufio.NewReader(stream)
 
-		f, err := os.Create("nodes/saveFilePath.txt")
+		generatedName := fmt.Sprintf("nodes/%s.part", util.RandString(10))
+		f, err := os.Create(generatedName)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		go util.StreamToFile(rw, f)
-
-		// 'stream' will stay open until you close it (or the other side closes it).
+		receivedName := util.StreamToFile(rw, f)
+		log.Println(receivedName)
+		if receivedName != "" {
+			receivedName = filepath.Base(receivedName)
+			err = os.Rename(generatedName, "nodes/"+receivedName)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	})
 
 	f, err := os.Open(nodeDir)

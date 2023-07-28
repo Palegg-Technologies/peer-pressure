@@ -17,6 +17,6 @@ log
 nodes
 *._test
 testdir/
-peer-pressure
+peer-pressure*
 .DS_Store
 protoc/

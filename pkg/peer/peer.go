@@ -152,19 +152,22 @@ func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
 	writer := bufio.NewWriter(file)
 
 	var wg sync.WaitGroup
-	log.Println(dht.DefaultBootstrapPeers)
 	for _, peerAddr := range dht.DefaultBootstrapPeers {
-		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
+		if err != nil {
+			log.Println("Default peer bootstrap warning:", err)
+			continue
+		}
 		wg.Add(1)
-		go func(addr multiaddr.Multiaddr) {
+		go func(addr multiaddr.Multiaddr, pInfo *peer.AddrInfo) {
 			defer wg.Done()
-			if err := p.Node.Connect(ctx, *peerinfo); err != nil {
-				log.Println("Bootstrap warning:", err)
+			if err := p.Node.Connect(ctx, *pInfo); err != nil {
+				log.Printf("Bootstraping %v warning: %v\n", *pInfo, err)
 			} else {
-				log.Println("Connection established with bootstrap node:", *peerinfo)
+				log.Println("Connection established with bootstrap node:", *pInfo)
 				writer.WriteString(addr.String())
 			}
-		}(peerAddr)
+		}(peerAddr, peerinfo)
 	}
 	wg.Wait()
 
@@ -173,6 +176,10 @@ func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
 
 func (p *Peer) GetPeerDir() string {
 	return p.peerDir
+}
+
+func (p *Peer) GetRendezvous() string {
+	return p.rendezvous
 }
 
 func loadReasourceManager() network.ResourceManager {

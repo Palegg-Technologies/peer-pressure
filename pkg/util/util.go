@@ -37,8 +37,41 @@ func AppendStringToFile(path string, content string) {
 }
 
 func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
-	writer := bufio.NewWriter(file)
 	lenBytes := make([]byte, 4)
+
+	n, err := rw.Read(lenBytes)
+	if err != nil {
+		fmt.Println("Error reading from buffer")
+		panic(err)
+	}
+	messageSize := binary.BigEndian.Uint32(lenBytes)
+
+	str := make([]byte, messageSize)
+	_, err = io.ReadFull(rw, str)
+	if err != nil {
+		fmt.Println("Error reading from buffer")
+		panic(err)
+	}
+	log.Println(n, len(str), str)
+
+	index := pb.Index{}
+	err = proto.Unmarshal(str, &index)
+	if err != nil {
+		log.Println("Error unmarshaling proto chunk")
+		panic(err)
+	}
+	indexFile, err := os.Create(index.GetFilename())
+	if err != nil {
+		log.Println("Error creating index file")
+		panic(err)
+	}
+	_, err = indexFile.WriteString(index.String())
+	if err != nil {
+		log.Println("Error writin index file")
+		panic(err)
+	}
+
+	writer := bufio.NewWriter(file)
 	for {
 		n, err := rw.Read(lenBytes)
 		if err == io.EOF || n == 0 {
@@ -84,7 +117,7 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 			log.Println(err)
 		}
 	}
-	err := writer.Flush()
+	err = writer.Flush()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -94,8 +127,36 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 func FileToStream(rw *bufio.Writer, file *os.File) {
 	data := make([]byte, chunkSize)
 	filename := file.Name()
+	fileInfo, _ := file.Stat()
 
 	var partNum int32 = 0
+	index := &pb.Index{
+		NChunks:  int32(fileInfo.Size() / chunkSize),
+		Filename: filename,
+		Progress: 0,
+	}
+	sendData, err := proto.Marshal(index)
+	if err != nil {
+		log.Println("Error marshaling proto chunk")
+		panic(err)
+	}
+
+	messageSize := uint32(len(sendData))
+	messageSizeBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
+
+	_, err = rw.Write(messageSizeBytes)
+	if err != nil {
+		log.Println("Error writing size prefix to buffer")
+		panic(err)
+	}
+
+	_, err = rw.Write(sendData)
+	if err != nil {
+		log.Println("Error writing to buffer")
+		panic(err)
+	}
+
 	for {
 		n, err := file.Read(data)
 		lenData := int32(n)

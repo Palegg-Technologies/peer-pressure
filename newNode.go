@@ -102,7 +102,7 @@ func createNewNode(name string, rendezvous string, opt int) {
 	p := peer.New(name, rendezvous)
 	p.Save()
 	go func() {
-		file, err := os.OpenFile(filepath.Join(p.GetPeerDir(), rendezvous), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+		file, err := os.OpenFile(filepath.Join(p.GetPeerDir(), p.GetRendezvous()), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 		if err != nil {
 			log.Panicln(err)
 		}

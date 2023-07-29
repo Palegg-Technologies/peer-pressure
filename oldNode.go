@@ -7,24 +7,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
+	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/libp2p/go-libp2p"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
-	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
-	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 )
 
 const TCPProtocolID = protocol.ID("tcp")
@@ -120,29 +112,9 @@ func (m oldNodeMenuModel) View() string {
 }
 
 func receiveFile(ctx context.Context, nodeName string) {
-	nodeDir := filepath.Join("nodes", nodeName)
-	prvBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.priv"))
-	prvKey, _ := crypto.UnmarshalPrivateKey(prvBytes)
+	p := peer.Load(nodeName)
 
-	// Load limiter config
-	limiterCfg, err := os.Open("limitCfg.json")
-	if err != nil {
-		panic(err)
-	}
-	limiter, err := rcmgr.NewDefaultLimiterFromJSON(limiterCfg)
-	if err != nil {
-		panic(err)
-	}
-	rcm, err := rcmgr.NewResourceManager(limiter)
-	if err != nil {
-		panic(err)
-	}
-
-	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(rcm))
-	if err != nil {
-		panic(err)
-	}
-	defer h.Close()
+	h := p.Node
 	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
 		// Create a buffer stream for non blocking read and write.
 		rw := bufio.NewReader(stream)
@@ -165,27 +137,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		}
 	})
 
-	f, err := os.Open(nodeDir)
-	if err != nil {
-		log.Panicln(err)
-	}
-	files, err := f.Readdir(0)
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	topicNameFlag := "applesauce"
-	for _, v := range files {
-		if !v.IsDir() && v.Name() != "rsa.priv" && v.Name() != "rsa.pub" {
-			topicNameFlag = v.Name()
-		}
-	}
-
-	kademliaDHT := initDHT(ctx, h, nodeDir, topicNameFlag)
-	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
-	dutil.Advertise(ctx, routingDiscovery, topicNameFlag)
-
-	peerChan, err := routingDiscovery.FindPeers(ctx, topicNameFlag)
+	peerChan, err := p.DiscoverPeers(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -211,55 +163,14 @@ func receiveFile(ctx context.Context, nodeName string) {
 }
 
 func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
-	nodeDir := filepath.Join("nodes", nodeName)
-	prvBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.priv"))
-	prvKey, _ := crypto.UnmarshalPrivateKey(prvBytes)
+	p := peer.Load(nodeName)
 
-	// Load limiter config
-	limiterCfg, err := os.Open("limitCfg.json")
-	if err != nil {
-		panic(err)
-	}
-	limiter, err := rcmgr.NewDefaultLimiterFromJSON(limiterCfg)
-	if err != nil {
-		panic(err)
-	}
-	rcm, err := rcmgr.NewResourceManager(limiter)
+	peerChan, err := p.DiscoverPeers(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(rcm))
-	if err != nil {
-		panic(err)
-	}
-	defer h.Close()
-
-	f, err := os.Open(nodeDir)
-	if err != nil {
-		log.Panicln(err)
-	}
-	files, err := f.Readdir(0)
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	topicNameFlag := "applesauce"
-	for _, v := range files {
-		if !v.IsDir() && v.Name() != "rsa.priv" && v.Name() != "rsa.pub" {
-			topicNameFlag = v.Name()
-		}
-	}
-
-	kademliaDHT := initDHT(ctx, h, nodeDir, topicNameFlag)
-	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
-	dutil.Advertise(ctx, routingDiscovery, topicNameFlag)
-
-	peerChan, err := routingDiscovery.FindPeers(ctx, topicNameFlag)
-	if err != nil {
-		panic(err)
-	}
-
+	h := p.Node
 	log.Printf("S Peer ID: %s\n\n", h.ID())
 	for peer := range peerChan {
 		if peer.ID == h.ID() {
@@ -287,44 +198,4 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			}()
 		}
 	}
-}
-
-func initDHT(ctx context.Context, h host.Host, peerDir string, topicNameFlag string) *dht.IpfsDHT {
-	// Start a DHT, for use in peer discovery. We can't just make a new DHT
-	// client because we want each peer to maintain its own local copy of the
-	// DHT, so that the bootstrapping node of the DHT can go down without
-	// inhibiting future peer discovery.
-	kademliaDHT, err := dht.New(ctx, h)
-	if err != nil {
-		panic(err)
-	}
-	if err = kademliaDHT.Bootstrap(ctx); err != nil {
-		panic(err)
-	}
-
-	file, err := os.OpenFile(filepath.Join(peerDir, topicNameFlag), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer file.Close()
-	writer := bufio.NewWriter(file)
-
-	var wg sync.WaitGroup
-	log.Println(dht.DefaultBootstrapPeers)
-	for _, peerAddr := range dht.DefaultBootstrapPeers {
-		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := h.Connect(ctx, *peerinfo); err != nil {
-				log.Println("Bootstrap warning:", err)
-			} else {
-				log.Println("Connection established with bootstrap node:", *peerinfo)
-				writer.WriteString(peerAddr.String())
-			}
-		}()
-	}
-	wg.Wait()
-
-	return kademliaDHT
 }

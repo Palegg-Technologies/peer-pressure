@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/tui"
@@ -95,7 +99,34 @@ func (m createFormModel) View() string {
 }
 
 func createNewNode(name string, rendezvous string, opt int) {
-	nn := peer.New(name, rendezvous)
-	nn.Save()
-	go nn.DiscoverPeers(context.TODO(), nn.GetPeerDir())
+	p := peer.New(name, rendezvous)
+	p.Save()
+	go func() {
+		file, err := os.OpenFile(filepath.Join(p.GetPeerDir(), rendezvous), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+		if err != nil {
+			log.Panicln(err)
+		}
+		defer file.Close()
+		writer := bufio.NewWriter(file)
+
+		peerChan, err := p.DiscoverPeers(context.TODO())
+		if err != nil {
+			panic(err)
+		}
+
+		for peer := range peerChan {
+			if peer.ID == p.Node.ID() {
+				continue // No self connection
+			}
+			err := p.Node.Connect(context.Background(), peer)
+			if err != nil {
+				log.Println("Failed connecting to ", peer.ID.Pretty(), ", error:", err)
+			} else {
+				log.Println("Connected to:", peer.ID.Pretty())
+				for _, addr := range peer.Addrs {
+					writer.WriteString(addr.String())
+				}
+			}
+		}
+	}()
 }

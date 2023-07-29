@@ -15,6 +15,7 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
@@ -41,37 +42,62 @@ func New(name, rendezvous string) Peer {
 		log.Panicln(err)
 	}
 
-	// Load limiter config
-	limiterCfg, err := os.Open("limitCfg.json")
+	// start a libp2p host with default settings
+	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadReasourceManager()))
 	if err != nil {
 		panic(err)
 	}
-	limiter, err := rcmgr.NewDefaultLimiterFromJSON(limiterCfg)
-	if err != nil {
-		panic(err)
-	}
-	rcm, err := rcmgr.NewResourceManager(limiter)
-	if err != nil {
-		panic(err)
-	}
+	defer h.Close()
 
-	// start a libp2p node with default settings
-	node, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(rcm))
-	if err != nil {
-		panic(err)
-	}
-	defer node.Close()
-
-	log.Println(node.ID())
-	log.Println(node.Addrs())
+	log.Println(h.ID())
+	log.Println(h.Addrs())
 
 	return Peer{
-		Node:       node,
+		Node:       h,
 		Name:       name,
 		rendezvous: rendezvous,
 		privKey:    prvKey,
 		PubKey:     pubKey,
-		peerDir:    filepath.Join(".", "nodes", name),
+		peerDir:    filepath.Join("nodes", name),
+	}
+}
+
+func Load(name string) Peer {
+	nodeDir := filepath.Join("nodes", name)
+	prvBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.priv"))
+	prvKey, _ := crypto.UnmarshalPrivateKey(prvBytes)
+	pubBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.pub"))
+	pubKey, _ := crypto.UnmarshalPublicKey(pubBytes)
+
+	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadReasourceManager()))
+	if err != nil {
+		panic(err)
+	}
+	defer h.Close()
+
+	f, err := os.Open(nodeDir)
+	if err != nil {
+		log.Panicln(err)
+	}
+	files, err := f.Readdir(0)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	rendezvous := "applesauce"
+	for _, v := range files {
+		if !v.IsDir() && v.Name() != "rsa.priv" && v.Name() != "rsa.pub" {
+			rendezvous = v.Name()
+		}
+	}
+
+	return Peer{
+		Node:       h,
+		Name:       name,
+		rendezvous: rendezvous,
+		privKey:    prvKey,
+		PubKey:     pubKey,
+		peerDir:    filepath.Join("nodes", name),
 	}
 }
 
@@ -97,41 +123,12 @@ func (p *Peer) Save() {
 	util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.pub"), string(pubBytes))
 }
 
-func (p *Peer) DiscoverPeers(ctx context.Context, peerDir string) {
-	kademliaDHT := p.initDHT(ctx, peerDir)
+func (p *Peer) DiscoverPeers(ctx context.Context) (<-chan peer.AddrInfo, error) {
+	kademliaDHT := p.initDHT(ctx, p.peerDir)
 	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
 	dutil.Advertise(ctx, routingDiscovery, p.rendezvous)
 
-	file, err := os.OpenFile(filepath.Join(peerDir, p.rendezvous), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer file.Close()
-	writer := bufio.NewWriter(file)
-
-	// Look for others who have announced and attempt to connect to them
-	// Save connected peers to connect
-	log.Println("Searching for peers...")
-	peerChan, err := routingDiscovery.FindPeers(ctx, p.rendezvous)
-	if err != nil {
-		panic(err)
-	}
-	for peer := range peerChan {
-		if peer.ID == p.Node.ID() {
-			continue // No self connection
-		}
-		err := p.Node.Connect(ctx, peer)
-		if err != nil {
-			log.Println("Failed connecting to ", peer.ID.Pretty(), ", error:", err)
-		} else {
-			log.Println("Connected to:", peer.ID.Pretty())
-			for _, addr := range peer.Addrs {
-				writer.WriteString(addr.String())
-			}
-		}
-	}
-
-	log.Println("Peer discovery complete")
+	return routingDiscovery.FindPeers(ctx, p.rendezvous)
 }
 
 func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
@@ -176,4 +173,21 @@ func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
 
 func (p *Peer) GetPeerDir() string {
 	return p.peerDir
+}
+
+func loadReasourceManager() network.ResourceManager {
+	// Load limiter config
+	limiterCfg, err := os.Open("limitCfg.json")
+	if err != nil {
+		panic(err)
+	}
+	limiter, err := rcmgr.NewDefaultLimiterFromJSON(limiterCfg)
+	if err != nil {
+		panic(err)
+	}
+	rcm, err := rcmgr.NewResourceManager(limiter)
+	if err != nil {
+		panic(err)
+	}
+	return rcm
 }

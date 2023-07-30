@@ -38,6 +38,54 @@ func AppendStringToFile(path string, content string) {
 	}
 }
 
+func FileToStream(rw *bufio.Writer, file *os.File) {
+	data := make([]byte, chunkSize)
+	filename := filepath.Base(file.Name())
+	fileInfo, _ := file.Stat()
+	var partNum int32 = 0
+
+	index := &pb.Index{
+		NChunks:  int32(math.Ceil(float64(fileInfo.Size()) / chunkSize)),
+		Filename: filename,
+		Progress: 0,
+	}
+	_, err := rw.Write(index.Marshal())
+	if err != nil {
+		log.Println("Error writing to buffer")
+		panic(err)
+	}
+
+	for {
+		n, err := file.Read(data)
+		lenData := int32(n)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Println("Error reading from stdin")
+			panic(err)
+		}
+
+		partNum++
+		chunk := &pb.Chunk{
+			Index:    partNum,
+			Data:     data,
+			Filename: &filename,
+			Len:      &lenData,
+		}
+		_, err = rw.Write(chunk.Marshal())
+		if err != nil {
+			log.Println("Error writing to buffer")
+			panic(err)
+		}
+
+		err = rw.Flush()
+		if err != nil {
+			log.Println("Error flushing buffer")
+			panic(err)
+		}
+	}
+}
+
 func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 	lenBytes := make([]byte, 4)
 
@@ -124,86 +172,6 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 		log.Panic(err)
 	}
 	return
-}
-
-func FileToStream(rw *bufio.Writer, file *os.File) {
-	data := make([]byte, chunkSize)
-	filename := file.Name()
-	fileInfo, _ := file.Stat()
-
-	var partNum int32 = 0
-	index := &pb.Index{
-		NChunks:  int32(math.Ceil(float64(fileInfo.Size()) / chunkSize)),
-		Filename: filepath.Base(filename),
-		Progress: 0,
-	}
-	sendData, err := proto.Marshal(index)
-	if err != nil {
-		log.Println("Error marshaling proto chunk")
-		panic(err)
-	}
-
-	messageSize := uint32(len(sendData))
-	messageSizeBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
-
-	_, err = rw.Write(messageSizeBytes)
-	if err != nil {
-		log.Println("Error writing size prefix to buffer")
-		panic(err)
-	}
-
-	_, err = rw.Write(sendData)
-	if err != nil {
-		log.Println("Error writing to buffer")
-		panic(err)
-	}
-
-	for {
-		n, err := file.Read(data)
-		lenData := int32(n)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Println("Error reading from stdin")
-			panic(err)
-		}
-
-		partNum++
-		chunk := &pb.Chunk{
-			Index:    partNum,
-			Data:     data,
-			Filename: &filename,
-			Len:      &lenData,
-		}
-		sendData, err := proto.Marshal(chunk)
-		if err != nil {
-			log.Println("Error marshaling proto chunk")
-			panic(err)
-		}
-
-		messageSize := uint32(len(sendData))
-		messageSizeBytes := make([]byte, 4)
-		binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
-
-		_, err = rw.Write(messageSizeBytes)
-		if err != nil {
-			log.Println("Error writing size prefix to buffer")
-			panic(err)
-		}
-
-		_, err = rw.Write(sendData)
-		if err != nil {
-			log.Println("Error writing to buffer")
-			panic(err)
-		}
-		log.Println(lenData, len(sendData), sendData)
-		err = rw.Flush()
-		if err != nil {
-			log.Println("Error flushing buffer")
-			panic(err)
-		}
-	}
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

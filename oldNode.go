@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/pkg/util"

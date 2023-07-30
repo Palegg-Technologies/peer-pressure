@@ -3,10 +3,11 @@ package peer
 import (
 	"bufio"
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/multiformats/go-multiaddr"

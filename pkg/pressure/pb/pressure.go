@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/protobuf/proto"
 )

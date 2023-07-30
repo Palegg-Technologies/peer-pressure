@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
 	"unsafe"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
 )

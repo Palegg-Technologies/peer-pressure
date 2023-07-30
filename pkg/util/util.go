@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 	"unsafe"
 
@@ -60,12 +62,12 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 		log.Println("Error unmarshaling proto chunk")
 		panic(err)
 	}
-	indexFile, err := os.Create(index.GetFilename())
+	indexFile, err := os.Create(index.GetFilename() + ".ppindex")
 	if err != nil {
 		log.Println("Error creating index file")
 		panic(err)
 	}
-	_, err = indexFile.WriteString(index.String())
+	_, err = indexFile.Write(str)
 	if err != nil {
 		log.Println("Error writin index file")
 		panic(err)
@@ -131,8 +133,8 @@ func FileToStream(rw *bufio.Writer, file *os.File) {
 
 	var partNum int32 = 0
 	index := &pb.Index{
-		NChunks:  int32(fileInfo.Size() / chunkSize),
-		Filename: filename,
+		NChunks:  int32(math.Ceil(float64(fileInfo.Size()) / chunkSize)),
+		Filename: filepath.Base(filename),
 		Progress: 0,
 	}
 	sendData, err := proto.Marshal(index)

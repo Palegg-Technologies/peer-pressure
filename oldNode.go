@@ -113,7 +113,10 @@ func (m oldNodeMenuModel) View() string {
 }
 
 func receiveFile(ctx context.Context, nodeName string) {
-	p := peer.Load(nodeName)
+	p, err := peer.Load(nodeName)
+	if err != nil {
+		panic(err)
+	}
 
 	h := p.Node
 	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
@@ -164,7 +167,10 @@ func receiveFile(ctx context.Context, nodeName string) {
 }
 
 func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
-	p := peer.Load(nodeName)
+	p, err := peer.Load(nodeName)
+	if err != nil {
+		panic(err)
+	}
 
 	peerChan, err := p.DiscoverPeers(ctx)
 	if err != nil {

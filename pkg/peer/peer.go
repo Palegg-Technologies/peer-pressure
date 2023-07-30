@@ -3,8 +3,10 @@ package peer
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -32,7 +34,7 @@ type Peer struct {
 	crypto.PubKey
 }
 
-func New(name, rendezvous string) Peer {
+func New(name, rendezvous string) (*Peer, error) {
 	if rendezvous == "" {
 		rendezvous = "applesauce"
 	}
@@ -40,48 +42,48 @@ func New(name, rendezvous string) Peer {
 	// Creates a new RSA key pair for this host.
 	prvKey, pubKey, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	// start a libp2p host with default settings
-	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadReasourceManager()))
+	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadResourceManager()))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer h.Close()
 
 	log.Println(h.ID())
 	log.Println(h.Addrs())
 
-	return Peer{
+	return &Peer{
 		Node:       h,
 		Name:       name,
 		rendezvous: rendezvous,
 		privKey:    prvKey,
 		PubKey:     pubKey,
 		peerDir:    filepath.Join("nodes", name),
-	}
+	}, nil
 }
 
-func Load(name string) Peer {
+func Load(name string) (*Peer, error) {
 	nodeDir := filepath.Join("nodes", name)
 	prvBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.priv"))
 	prvKey, _ := crypto.UnmarshalPrivateKey(prvBytes)
 	pubBytes, _ := os.ReadFile(filepath.Join(nodeDir, "rsa.pub"))
 	pubKey, _ := crypto.UnmarshalPublicKey(pubBytes)
 
-	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadReasourceManager()))
+	h, err := libp2p.New(libp2p.Identity(prvKey), libp2p.ResourceManager(loadResourceManager()))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	f, err := os.Open(nodeDir)
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 	files, err := f.Readdir(0)
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 
 	rendezvous := "applesauce"
@@ -91,62 +93,66 @@ func Load(name string) Peer {
 		}
 	}
 
-	return Peer{
+	return &Peer{
 		Node:       h,
 		Name:       name,
 		rendezvous: rendezvous,
 		privKey:    prvKey,
 		PubKey:     pubKey,
 		peerDir:    filepath.Join("nodes", name),
-	}
+	}, nil
 }
 
-func (p *Peer) Save() {
+func (p *Peer) Save() error {
 	// make directory for node info
 	err := os.MkdirAll(p.peerDir, os.ModePerm)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// write private key
 	privBytes, err := crypto.MarshalPrivateKey(p.privKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.priv"), string(privBytes))
 
 	// write public key
 	pubBytes, err := crypto.MarshalPublicKey(p.PubKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.pub"), string(pubBytes))
+	return nil
 }
 
 func (p *Peer) DiscoverPeers(ctx context.Context) (<-chan peer.AddrInfo, error) {
-	kademliaDHT := p.initDHT(ctx, p.peerDir)
+	kademliaDHT, err := p.initDHT(ctx, p.peerDir)
+	if err != nil {
+		return nil, err
+	}
 	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
 	dutil.Advertise(ctx, routingDiscovery, p.rendezvous)
 
 	return routingDiscovery.FindPeers(ctx, p.rendezvous)
 }
 
-func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
+func (p *Peer) initDHT(ctx context.Context, peerDir string) (*dht.IpfsDHT, error) {
 	// Start a DHT, for use in peer discovery. We can't just make a new DHT
 	// client because we want each peer to maintain its own local copy of the
 	// DHT, so that the bootstrapping node of the DHT can go down without
 	// inhibiting future peer discovery.
 	kademliaDHT, err := dht.New(ctx, p.Node)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err = kademliaDHT.Bootstrap(ctx); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	file, err := os.OpenFile(filepath.Join(peerDir, p.rendezvous), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 	defer file.Close()
 	writer := bufio.NewWriter(file)
@@ -167,7 +173,7 @@ func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
 	}
 	wg.Wait()
 
-	return kademliaDHT
+	return kademliaDHT, nil
 }
 
 func (p *Peer) GetPeerDir() string {
@@ -178,19 +184,80 @@ func (p *Peer) GetRendezvous() string {
 	return p.rendezvous
 }
 
-func loadReasourceManager() network.ResourceManager {
-	// Load limiter config
+func loadResourceManager() network.ResourceManager {
 	limiterCfg, err := os.Open("limitCfg.json")
 	if err != nil {
-		panic(err)
+		if os.IsNotExist(err) {
+			defaultConfig := getDefaultLimiter()
+			err := saveLimiterConfig(defaultConfig)
+			if err != nil {
+				log.Errorf("Error creating and saving default limiter config: %s", err)
+				return nil
+			}
+			limiterCfg, err = os.Open("limitCfg.json")
+			if err != nil {
+				log.Errorf("Error opening 'limitCfg.json' after creating: %s", err)
+				return nil
+			}
+		} else {
+			log.Errorf("Error opening 'limitCfg.json': %s", err)
+			return nil
+		}
 	}
+	defer limiterCfg.Close()
+
 	limiter, err := rcmgr.NewDefaultLimiterFromJSON(limiterCfg)
 	if err != nil {
-		panic(err)
+		log.Errorf("Error parsing limiter config from JSON: %s", err)
+		return nil
 	}
 	rcm, err := rcmgr.NewResourceManager(limiter)
 	if err != nil {
-		panic(err)
+		log.Errorf("Error creating ResourceManager: %s", err)
+		return nil
 	}
 	return rcm
+}
+
+func getDefaultLimiter() *rcmgr.Limiter {
+	defaultLimitConfig := `
+	{
+		"System": {
+		  "StreamsInbound": 4096,
+		  "StreamsOutbound": 32768,
+		  "Conns": 64000,
+		  "ConnsInbound": 512,
+		  "ConnsOutbound": 32768,
+		  "FD": 64000
+		},
+		"Transient": {
+		  "StreamsInbound": 4096,
+		  "StreamsOutbound": 32768,
+		  "ConnsInbound": 512,
+		  "ConnsOutbound": 32768,
+		  "FD": 64000
+		},
+		"ProtocolDefault": {
+		  "StreamsInbound": 1024,
+		  "StreamsOutbound": 32768
+		},
+		"ServiceDefault": {
+		  "StreamsInbound": 2048,
+		  "StreamsOutbound": 32768
+		}
+	  }`
+
+	drcm, _ := rcmgr.NewDefaultLimiterFromJSON(strings.NewReader(defaultLimitConfig))
+	return &drcm
+}
+
+func saveLimiterConfig(config *rcmgr.Limiter) error {
+	file, err := os.Create("limitCfg.json")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(config)
 }

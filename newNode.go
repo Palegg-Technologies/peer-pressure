@@ -100,7 +100,10 @@ func (m createFormModel) View() string {
 }
 
 func createNewNode(name string, rendezvous string, opt int) {
-	p := peer.New(name, rendezvous)
+	p, err := peer.New(name, rendezvous)
+	if err != nil {
+		panic(err)
+	}
 	p.Save()
 	go func() {
 		file, err := os.OpenFile(filepath.Join(p.GetPeerDir(), p.GetRendezvous()), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)

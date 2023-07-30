@@ -2,7 +2,6 @@ package util
 
 import (
 	"bufio"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
@@ -14,7 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
-	"google.golang.org/protobuf/proto"
 )
 
 const chunkSize = 4096
@@ -87,43 +85,14 @@ func FileToStream(rw *bufio.Writer, file *os.File) {
 }
 
 func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
-	lenBytes := make([]byte, 4)
-
-	n, err := rw.Read(lenBytes)
-	if err != nil {
-		fmt.Println("Error reading from buffer")
-		panic(err)
-	}
-	messageSize := binary.BigEndian.Uint32(lenBytes)
-
-	str := make([]byte, messageSize)
-	_, err = io.ReadFull(rw, str)
-	if err != nil {
-		fmt.Println("Error reading from buffer")
-		panic(err)
-	}
-	log.Println(n, len(str), str)
-
 	index := pb.Index{}
-	err = proto.Unmarshal(str, &index)
-	if err != nil {
-		log.Println("Error unmarshaling proto chunk")
-		panic(err)
-	}
-	indexFile, err := os.Create(index.GetFilename() + ".ppindex")
-	if err != nil {
-		log.Println("Error creating index file")
-		panic(err)
-	}
-	_, err = indexFile.Write(str)
-	if err != nil {
-		log.Println("Error writin index file")
-		panic(err)
-	}
+	index.Read(rw)
+	index.Save()
 
 	writer := bufio.NewWriter(file)
 	for {
-		n, err := rw.Read(lenBytes)
+		chunk := pb.Chunk{}
+		n, err := chunk.Read(rw)
 		if err == io.EOF || n == 0 {
 			log.Printf("%s done writing", file.Name())
 			break
@@ -131,27 +100,7 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 			fmt.Println("Error reading from buffer")
 			panic(err)
 		}
-		messageSize := binary.BigEndian.Uint32(lenBytes)
 
-		str := make([]byte, messageSize)
-		_, err = io.ReadFull(rw, str)
-		if err != nil {
-			fmt.Println("Error reading from buffer")
-			panic(err)
-		}
-		log.Println(n, len(str), str)
-
-		chunk := pb.Chunk{}
-		err = proto.Unmarshal(str, &chunk)
-		if err != nil {
-			log.Println("Error unmarshaling proto chunk")
-			panic(err)
-		}
-
-		log.Println(chunk.Data)
-		log.Println(*chunk.Len)
-		log.Println(*chunk.Filename)
-		log.Println()
 		if chunk.Filename != nil {
 			filename = *chunk.Filename
 		}
@@ -167,7 +116,7 @@ func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
 			log.Println(err)
 		}
 	}
-	err = writer.Flush()
+	err := writer.Flush()
 	if err != nil {
 		log.Panic(err)
 	}

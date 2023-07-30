@@ -36,7 +36,7 @@ func AppendStringToFile(path string, content string) {
 	}
 }
 
-func FileToStream(rw *bufio.Writer, file *os.File) {
+func FileToStream(w *bufio.Writer, file *os.File) {
 	data := make([]byte, chunkSize)
 	filename := filepath.Base(file.Name())
 	fileInfo, _ := file.Stat()
@@ -47,7 +47,7 @@ func FileToStream(rw *bufio.Writer, file *os.File) {
 		Filename: filename,
 		Progress: 0,
 	}
-	_, err := rw.Write(index.Marshal())
+	_, err := w.Write(index.Marshal())
 	if err != nil {
 		log.Println("Error writing to buffer")
 		panic(err)
@@ -70,13 +70,13 @@ func FileToStream(rw *bufio.Writer, file *os.File) {
 			Filename: &filename,
 			Len:      &lenData,
 		}
-		_, err = rw.Write(chunk.Marshal())
+		_, err = w.Write(chunk.Marshal())
 		if err != nil {
 			log.Println("Error writing to buffer")
 			panic(err)
 		}
 
-		err = rw.Flush()
+		err = w.Flush()
 		if err != nil {
 			log.Println("Error flushing buffer")
 			panic(err)
@@ -84,15 +84,15 @@ func FileToStream(rw *bufio.Writer, file *os.File) {
 	}
 }
 
-func StreamToFile(rw *bufio.Reader, file *os.File) (filename string) {
+func StreamToFile(r *bufio.Reader, file *os.File) (filename string) {
 	index := pb.Index{}
-	index.Read(rw)
+	index.Read(r)
 	index.Save()
 
 	writer := bufio.NewWriter(file)
 	for {
 		chunk := pb.Chunk{}
-		n, err := chunk.Read(rw)
+		n, err := chunk.Read(r)
 		if err == io.EOF || n == 0 {
 			log.Printf("%s done writing", file.Name())
 			break

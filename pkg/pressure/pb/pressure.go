@@ -24,14 +24,11 @@ func (x *Chunk) Marshal() []byte {
 	return append(messageSizeBytes, data...)
 }
 
-func (x *Chunk) Read(r io.Reader) (int, error) {
-	lenBytes := make([]byte, 4)
-
-	n, err := r.Read(lenBytes)
+func (x *Chunk) Read(r io.Reader) error {
+	messageSize, err := readMessageLen(r)
 	if err != nil {
-		return n, err
+		panic(err)
 	}
-	messageSize := binary.BigEndian.Uint32(lenBytes)
 
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
@@ -45,7 +42,7 @@ func (x *Chunk) Read(r io.Reader) (int, error) {
 		log.Println("Error unmarshaling proto chunk")
 		panic(err)
 	}
-	return n, nil
+	return nil
 }
 
 func (x *ChunkRequest) Marshal() []byte {
@@ -77,15 +74,10 @@ func (x *Index) Marshal() []byte {
 }
 
 func (x *Index) Read(r io.Reader) {
-	lenBytes := make([]byte, 4)
-
-	_, err := r.Read(lenBytes)
+	messageSize, err := readMessageLen(r)
 	if err != nil {
-		log.Println("Error reading from buffer")
 		panic(err)
 	}
-	messageSize := binary.BigEndian.Uint32(lenBytes)
-
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
 	if err != nil {
@@ -118,4 +110,15 @@ func (x *Index) Save() {
 		log.Println("Error writing index file")
 		panic(err)
 	}
+}
+
+func readMessageLen(r io.Reader) (uint32, error) {
+	lenBytes := make([]byte, 4)
+	n, err := r.Read(lenBytes)
+	if err != nil {
+		return 0, err
+	} else if n == 0 {
+		return 0, io.EOF
+	}
+	return binary.BigEndian.Uint32(lenBytes), nil
 }

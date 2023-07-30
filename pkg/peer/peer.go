@@ -73,7 +73,6 @@ func Load(name string) Peer {
 	if err != nil {
 		panic(err)
 	}
-	defer h.Close()
 
 	f, err := os.Open(nodeDir)
 	if err != nil {
@@ -153,11 +152,7 @@ func (p *Peer) initDHT(ctx context.Context, peerDir string) *dht.IpfsDHT {
 
 	var wg sync.WaitGroup
 	for _, peerAddr := range dht.DefaultBootstrapPeers {
-		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
-		if err != nil {
-			log.Println("Default peer bootstrap warning:", err)
-			continue
-		}
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
 		wg.Add(1)
 		go func(addr multiaddr.Multiaddr, pInfo *peer.AddrInfo) {
 			defer wg.Done()

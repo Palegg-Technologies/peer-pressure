@@ -17,11 +17,7 @@ func (x *Chunk) Marshal() []byte {
 		log.Panicln("Error marshaling proto Chunk message:", err)
 	}
 
-	messageSize := uint32(len(data))
-	messageSizeBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
-
-	return append(messageSizeBytes, data...)
+	return append(bigEndianMessageSize(len(data)), data...)
 }
 
 func (x *Chunk) Read(r io.Reader) error {
@@ -49,11 +45,7 @@ func (x *ChunkRequest) Marshal() []byte {
 		log.Panicln("Error marshaling proto ChunkRequest message:", err)
 	}
 
-	messageSize := uint32(len(data))
-	messageSizeBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
-
-	return append(messageSizeBytes, data...)
+	return append(bigEndianMessageSize(len(data)), data...)
 }
 
 func (x *Index) Marshal() []byte {
@@ -62,11 +54,7 @@ func (x *Index) Marshal() []byte {
 		log.Panicln("Error marshaling proto Index message:", err)
 	}
 
-	messageSize := uint32(len(data))
-	messageSizeBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
-
-	return append(messageSizeBytes, data...)
+	return append(bigEndianMessageSize(len(data)), data...)
 }
 
 func (x *Index) Read(r io.Reader) {
@@ -112,4 +100,11 @@ func readMessageLen(r io.Reader) (uint32, error) {
 		return 0, io.EOF
 	}
 	return binary.BigEndian.Uint32(lenBytes), nil
+}
+
+func bigEndianMessageSize(n int) []byte {
+	messageSize := uint32(n)
+	messageSizeBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(messageSizeBytes, messageSize)
+	return messageSizeBytes
 }

@@ -14,8 +14,7 @@ import (
 func (x *Chunk) Marshal() []byte {
 	data, err := proto.Marshal(x)
 	if err != nil {
-		log.Println("Error marshaling proto Chunk message")
-		panic(err)
+		log.Panicln("Error marshaling proto Chunk message:", err)
 	}
 
 	messageSize := uint32(len(data))
@@ -28,20 +27,18 @@ func (x *Chunk) Marshal() []byte {
 func (x *Chunk) Read(r io.Reader) error {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error reading length of Chunk message: %v", err)
 	}
 
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
 	if err != nil {
-		fmt.Println("Error reading from buffer")
-		panic(err)
+		return fmt.Errorf("error reading from buffer: %v", err)
 	}
 
 	err = proto.Unmarshal(str, x)
 	if err != nil {
-		log.Println("Error unmarshaling proto chunk")
-		panic(err)
+		return fmt.Errorf("error unmarshaling proto chunk: %v", err)
 	}
 	return nil
 }
@@ -49,8 +46,7 @@ func (x *Chunk) Read(r io.Reader) error {
 func (x *ChunkRequest) Marshal() []byte {
 	data, err := proto.Marshal(x)
 	if err != nil {
-		log.Println("Error marshaling proto ChunkRequest message")
-		panic(err)
+		log.Panicln("Error marshaling proto ChunkRequest message:", err)
 	}
 
 	messageSize := uint32(len(data))
@@ -63,8 +59,7 @@ func (x *ChunkRequest) Marshal() []byte {
 func (x *Index) Marshal() []byte {
 	data, err := proto.Marshal(x)
 	if err != nil {
-		log.Println("Error marshaling proto Index message")
-		panic(err)
+		log.Panicln("Error marshaling proto Index message:", err)
 	}
 
 	messageSize := uint32(len(data))
@@ -77,39 +72,34 @@ func (x *Index) Marshal() []byte {
 func (x *Index) Read(r io.Reader) {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
-		panic(err)
+		log.Panicln("Error marshaling proto Index message:", err)
 	}
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
 	if err != nil {
-		log.Println("Error reading from buffer")
-		panic(err)
+		log.Panicln("Error reading from buffer:", err)
 	}
 
 	err = proto.Unmarshal(str, x)
 	if err != nil {
-		log.Println("Error unmarshaling proto chunk")
-		panic(err)
+		log.Panicln("Error unmarshaling proto chunk:", err)
 	}
 }
 
 func (x *Index) Save() {
 	indexFile, err := os.Create(x.Filename + ".ppindex")
 	if err != nil {
-		log.Println("Error creating index file")
-		panic(err)
+		log.Panicln("Error creating index file:", err)
 	}
 
 	data, err := proto.Marshal(x)
 	if err != nil {
-		log.Println("Error marshaling Index message")
-		panic(err)
+		log.Panicln("Error marshaling Index message:", err)
 	}
 
 	_, err = indexFile.Write(data)
 	if err != nil {
-		log.Println("Error writing index file")
-		panic(err)
+		log.Panicln("Error writing index file:", err)
 	}
 }
 

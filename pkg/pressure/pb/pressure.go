@@ -23,7 +23,7 @@ func (x *Chunk) Marshal() []byte {
 func (x *Chunk) Read(r io.Reader) error {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
-		return fmt.Errorf("error reading length of Chunk message: %v", err)
+		return err
 	}
 
 	str := make([]byte, messageSize)

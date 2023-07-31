@@ -85,11 +85,7 @@ func FileToStream(w *bufio.Writer, file *os.File) {
 	}
 }
 
-func StreamToFile(r *bufio.Reader, file *os.File) (filename string) {
-	index := pb.Index{}
-	index.Read(r)
-	index.Save()
-
+func StreamToFile(r *bufio.Reader, file *os.File) (err error) {
 	writer := bufio.NewWriter(file)
 	for {
 		chunk := pb.Chunk{}
@@ -99,11 +95,7 @@ func StreamToFile(r *bufio.Reader, file *os.File) (filename string) {
 			break
 		} else if err != nil {
 			fmt.Println("Error reading from buffer")
-			panic(err)
-		}
-
-		if chunk.Filename != nil {
-			filename = *chunk.Filename
+			return err
 		}
 
 		var data []byte
@@ -117,11 +109,7 @@ func StreamToFile(r *bufio.Reader, file *os.File) (filename string) {
 			log.Println(err)
 		}
 	}
-	err := writer.Flush()
-	if err != nil {
-		log.Panic(err)
-	}
-	return
+	return writer.Flush()
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

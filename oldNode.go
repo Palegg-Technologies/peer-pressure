@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
+	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
 	"github.com/Azanul/peer-pressure/pkg/util"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
@@ -121,23 +121,25 @@ func receiveFile(ctx context.Context, nodeName string) {
 	h := p.Node
 	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
 		// Create a buffer stream for non blocking read and write.
-		rw := bufio.NewReader(stream)
+		r := bufio.NewReader(stream)
 
-		generatedName := fmt.Sprintf("nodes/%s.part", util.RandString(10))
-		f, err := os.Create(generatedName)
+		index := pb.Index{}
+		index.Read(r)
+		index.Save()
+
+		dest := "nodes/" + index.GetFilename()
+		f, err := os.Open(dest)
+		if os.IsNotExist(err) {
+			f, err = os.Create(dest)
+		}
 		if err != nil {
-			log.Println(err)
+			log.Errorf("error opening/creating file %s: %v\n", dest, err)
 			return
 		}
 
-		receivedName := util.StreamToFile(rw, f)
-		log.Println(receivedName)
-		if receivedName != "" {
-			receivedName = filepath.Base(receivedName)
-			err = os.Rename(generatedName, "nodes/"+receivedName)
-			if err != nil {
-				log.Println(err)
-			}
+		err = util.StreamToFile(r, f)
+		if err != nil {
+			log.Errorln("error writing stream to file:", err)
 		}
 	})
 

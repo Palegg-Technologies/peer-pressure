@@ -145,7 +145,7 @@ type Index struct {
 
 	NChunks  int32  `protobuf:"varint,1,opt,name=n_chunks,json=nChunks,proto3" json:"n_chunks,omitempty"` // No. of chunks in the file
 	Filename string `protobuf:"bytes,2,opt,name=filename,proto3" json:"filename,omitempty"`
-	Progress int32  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"` // Percentage of the file received
+	Progress int32  `protobuf:"varint,3,opt,name=progress,proto3" json:"progress,omitempty"` // No. of chunks already received
 }
 
 func (x *Index) Reset() {

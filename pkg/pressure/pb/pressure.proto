@@ -18,5 +18,5 @@ message ChunkRequest {
 message Index {
     int32 n_chunks = 1; // No. of chunks in the file
     string filename = 2;
-    int32 progress = 3; // Percentage of the file received
+    int32 progress = 3; // No. of chunks already received
 }

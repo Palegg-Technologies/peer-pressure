@@ -128,7 +128,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		index.Save()
 
 		dest := "nodes/" + index.GetFilename()
-		f, err := os.Open(dest)
+		f, err := os.OpenFile(dest, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 		if os.IsNotExist(err) {
 			f, err = os.Create(dest)
 		}

@@ -48,6 +48,23 @@ func (x *ChunkRequest) Marshal() []byte {
 	return append(bigEndianMessageSize(len(data)), data...)
 }
 
+func (x *ChunkRequest) Read(r io.Reader) {
+	messageSize, err := readMessageLen(r)
+	if err != nil {
+		log.Panicln("Error marshaling proto ChunkRequest message:", err)
+	}
+	str := make([]byte, messageSize)
+	_, err = io.ReadFull(r, str)
+	if err != nil {
+		log.Panicln("Error reading from buffer:", err)
+	}
+
+	err = proto.Unmarshal(str, x)
+	if err != nil {
+		log.Panicln("Error unmarshaling proto chunk:", err)
+	}
+}
+
 func (x *Index) Marshal() []byte {
 	data, err := proto.Marshal(x)
 	if err != nil {

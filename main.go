@@ -252,6 +252,7 @@ func main() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
+	log.SetLevel(log.DebugLevel)
 
 	// starting our program
 	m := initialModel()

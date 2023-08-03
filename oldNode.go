@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
@@ -121,11 +122,34 @@ func receiveFile(ctx context.Context, nodeName string) {
 	h := p.Node
 	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
 		// Create a buffer stream for non blocking read and write.
-		r := bufio.NewReader(stream)
+		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 		index := pb.Index{}
-		index.Read(r)
-		index.Save()
+		index.Read(rw.Reader)
+		indexPath := "nodes/" + index.GetFilename() + ".ppindex"
+		existingIndex, err := os.ReadFile(indexPath)
+		if err == nil {
+			log.Debugln("index file found, using existing index")
+			err = proto.Unmarshal(existingIndex, &index)
+			if err != nil {
+				log.Errorln("Error unmarshaling existing index:", err)
+				return
+			}
+		} else {
+			log.Warnln("index file not found, saving incoming index")
+			index.Save()
+		}
+
+		cr := pb.ChunkRequest{
+			Index: index.Progress + 1,
+		}
+
+		str := cr.Marshal()
+		_, err = rw.Write(str)
+		if err != nil {
+			panic(err)
+		}
+		log.Debugln(rw.Flush())
 
 		dest := "nodes/" + index.GetFilename()
 		f, err := os.OpenFile(dest, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
@@ -137,7 +161,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 			return
 		}
 
-		err = util.StreamToFile(r, f)
+		err = util.StreamToFile(rw, f)
 		if err != nil {
 			log.Errorln("error writing stream to file:", err)
 		}
@@ -194,7 +218,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			if err != nil {
 				log.Panicln(err)
 			}
-			rw := bufio.NewWriter(stream)
+			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 			go func() {
 				f, err := os.Open(sendFilePath)

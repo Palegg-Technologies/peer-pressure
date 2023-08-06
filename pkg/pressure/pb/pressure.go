@@ -11,15 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (x *Chunk) Marshal() []byte {
-	data, err := proto.Marshal(x)
-	if err != nil {
-		log.Panicln("Error marshaling proto Chunk message:", err)
-	}
-
-	return append(bigEndianMessageSize(len(data)), data...)
-}
-
 func (x *Chunk) Read(r io.Reader) error {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
@@ -39,15 +30,6 @@ func (x *Chunk) Read(r io.Reader) error {
 	return nil
 }
 
-func (x *ChunkRequest) Marshal() []byte {
-	data, err := proto.Marshal(x)
-	if err != nil {
-		log.Panicln("Error marshaling proto ChunkRequest message:", err)
-	}
-
-	return append(bigEndianMessageSize(len(data)), data...)
-}
-
 func (x *ChunkRequest) Read(r io.Reader) {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
@@ -63,15 +45,6 @@ func (x *ChunkRequest) Read(r io.Reader) {
 	if err != nil {
 		log.Panicln("Error unmarshaling proto chunk:", err)
 	}
-}
-
-func (x *Index) Marshal() []byte {
-	data, err := proto.Marshal(x)
-	if err != nil {
-		log.Panicln("Error marshaling proto Index message:", err)
-	}
-
-	return append(bigEndianMessageSize(len(data)), data...)
 }
 
 func (x *Index) Read(r io.Reader) {
@@ -106,6 +79,15 @@ func (x *Index) Save() {
 	if err != nil {
 		log.Panicln("Error writing index file:", err)
 	}
+}
+
+func Marshal(x proto.Message) []byte {
+	data, err := proto.Marshal(x)
+	if err != nil {
+		log.Panicf("Error marshaling proto %s message: %v\n", x.ProtoReflect().Type(), err)
+	}
+
+	return append(bigEndianMessageSize(len(data)), data...)
 }
 
 func readMessageLen(r io.Reader) (uint32, error) {

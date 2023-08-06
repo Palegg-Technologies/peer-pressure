@@ -49,7 +49,7 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File) {
 		Filename: filename,
 		Progress: 0,
 	}
-	str := index.Marshal()
+	str := pb.Marshal(index)
 	_, err := rw.Write(str)
 	if err != nil {
 		log.Println("Error writing to buffer")
@@ -87,7 +87,7 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File) {
 			Filename: &filename,
 			Len:      &lenData,
 		}
-		_, err = rw.Write(chunk.Marshal())
+		_, err = rw.Write(pb.Marshal(chunk))
 		if err != nil {
 			log.Println("Error writing to buffer")
 			panic(err)

@@ -144,7 +144,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 			Index: index.Progress + 1,
 		}
 
-		str := cr.Marshal()
+		str := pb.Marshal(&cr)
 		_, err = rw.Write(str)
 		if err != nil {
 			panic(err)

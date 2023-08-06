@@ -195,15 +195,15 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 	return
 }
 
-func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
+func sendFile(ctx context.Context, nodeName string, sendFilePath string) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	peerChan, err := p.DiscoverPeers(ctx)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	h := p.Node
@@ -219,14 +219,14 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			log.Println("S Connected to:", peer.ID.Pretty())
 			stream, err := h.NewStream(ctx, peer.ID, TCPProtocolID)
 			if err != nil {
-				log.Panicln(err)
+				return err
 			}
 			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 			go func() {
 				f, err := os.Open(sendFilePath)
 				if err != nil {
-					log.Println(err)
+					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					return
 				}
 				util.FileToStream(rw, f)
@@ -234,4 +234,5 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) {
 			}()
 		}
 	}
+	return
 }

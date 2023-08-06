@@ -90,7 +90,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Did the user select a file?
 		if didSelect, path := crrNode.filepicker.DidSelectFile(msg); didSelect {
-			sendFile(context.TODO(), crrNode.name, path)
+			err := sendFile(context.TODO(), crrNode.name, path)
+			if err != nil {
+				fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+				cmd = tea.Quit
+			}
 			m.state++
 		}
 		return m, cmd

@@ -173,8 +173,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 	}
 
 	log.Printf("R Peer ID: %s\n\n", h.ID())
-	i := 0
-	for {
+	for i := 0; i < 30; i++ {
 		for peer := range peerChan {
 			if peer.ID == h.ID() {
 				continue // No self connection
@@ -184,11 +183,11 @@ func receiveFile(ctx context.Context, nodeName string) {
 				log.Println("R Failed connecting to ", peer.ID.Pretty(), ", error:", err)
 			} else {
 				log.Println("R Connected to peer:", peer.ID.Pretty())
+				break
 			}
 		}
 		log.Printf("Receiver wait round: %d", i)
 		time.Sleep(time.Duration(5) * time.Second)
-		i++
 	}
 }
 

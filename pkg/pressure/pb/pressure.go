@@ -2,66 +2,18 @@ package pb
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (x *Chunk) Read(r io.Reader) error {
-	messageSize, err := readMessageLen(r)
-	if err != nil {
-		return err
-	}
-
-	str := make([]byte, messageSize)
-	_, err = io.ReadFull(r, str)
-	if err != nil {
-		return fmt.Errorf("error reading from buffer: %v", err)
-	}
-
-	err = proto.Unmarshal(str, x)
-	if err != nil {
-		return fmt.Errorf("error unmarshaling proto chunk: %v", err)
-	}
-	return nil
-}
-
-func (x *ChunkRequest) Read(r io.Reader) {
-	messageSize, err := readMessageLen(r)
-	if err != nil {
-		log.Panicln("Error marshaling proto ChunkRequest message:", err)
-	}
-	str := make([]byte, messageSize)
-	_, err = io.ReadFull(r, str)
-	if err != nil {
-		log.Panicln("Error reading from buffer:", err)
-	}
-
-	err = proto.Unmarshal(str, x)
-	if err != nil {
-		log.Panicln("Error unmarshaling proto chunk:", err)
-	}
-}
-
-func (x *Index) Read(r io.Reader) {
-	messageSize, err := readMessageLen(r)
-	if err != nil {
-		log.Panicln("Error marshaling proto Index message:", err)
-	}
-	str := make([]byte, messageSize)
-	_, err = io.ReadFull(r, str)
-	if err != nil {
-		log.Panicln("Error reading from buffer:", err)
-	}
-
-	err = proto.Unmarshal(str, x)
-	if err != nil {
-		log.Panicln("Error unmarshaling proto chunk:", err)
-	}
+type pressure interface {
+	*Chunk | *ChunkRequest | *Index
+	ProtoReflect() protoreflect.Message
 }
 
 func (x *Index) Save() {
@@ -78,6 +30,23 @@ func (x *Index) Save() {
 	_, err = indexFile.Write(data)
 	if err != nil {
 		log.Panicln("Error writing index file:", err)
+	}
+}
+
+func Read[T pressure](r io.Reader, x T) {
+	messageSize, err := readMessageLen(r)
+	if err != nil {
+		log.Panicf("Error marshaling proto %s message: %v\n", x.ProtoReflect().Type(), err)
+	}
+	str := make([]byte, messageSize)
+	_, err = io.ReadFull(r, str)
+	if err != nil {
+		log.Panicf("Error reading %s from buffer: %v\n", x.ProtoReflect().Type(), err)
+	}
+
+	err = proto.Unmarshal(str, x)
+	if err != nil {
+		log.Panicf("Error unmarshaling proto %s: %v\n", x.ProtoReflect().Type(), err)
 	}
 }
 

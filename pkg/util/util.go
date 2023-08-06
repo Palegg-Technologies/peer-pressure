@@ -61,8 +61,8 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File) {
 		panic(err)
 	}
 
-	cr := pb.ChunkRequest{}
-	cr.Read(rw.Reader)
+	cr := &pb.ChunkRequest{}
+	pb.Read(rw.Reader, cr)
 
 	newOff, err := file.Seek(int64(cr.GetIndex()/chunkSize), 0)
 	log.Debugln("New offset:", newOff)
@@ -113,8 +113,8 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 
 	writer := bufio.NewWriter(file)
 	for {
-		chunk := pb.Chunk{}
-		err := chunk.Read(rw.Reader)
+		chunk := &pb.Chunk{}
+		pb.Read(rw.Reader, chunk)
 		if err == io.EOF {
 			log.Printf("%s done writing", file.Name())
 			break

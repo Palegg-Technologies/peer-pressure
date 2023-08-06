@@ -125,7 +125,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 		index := pb.Index{}
-		index.Read(rw.Reader)
+		pb.Read(rw.Reader, &index)
 		indexPath := "nodes/" + index.GetFilename() + ".ppindex"
 		existingIndex, err := os.ReadFile(indexPath)
 		if err == nil {

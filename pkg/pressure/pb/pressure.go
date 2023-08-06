@@ -50,7 +50,7 @@ func Read[T pressure](r io.Reader, x T) {
 	}
 }
 
-func Marshal(x proto.Message) []byte {
+func Marshal[T pressure](x T) []byte {
 	data, err := proto.Marshal(x)
 	if err != nil {
 		log.Panicf("Error marshaling proto %s message: %v\n", x.ProtoReflect().Type(), err)

@@ -92,7 +92,7 @@ func (x *Index) Read(r io.Reader) {
 }
 
 func (x *Index) Save() {
-	indexFile, err := os.Create("nodes/" + x.Filename + ".ppindex")
+	indexFile, err := os.OpenFile("nodes/"+x.Filename+".ppindex", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
 		log.Panicln("Error creating index file:", err)
 	}

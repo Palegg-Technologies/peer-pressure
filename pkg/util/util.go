@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
 )
@@ -49,8 +50,6 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File) {
 		Progress: 0,
 	}
 	str := index.Marshal()
-	log.Debugln("writing index:", str)
-	log.Debugln("len of index:", len(str))
 	_, err := rw.Write(str)
 	if err != nil {
 		log.Println("Error writing to buffer")
@@ -103,6 +102,15 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File) {
 }
 
 func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
+	indexPath := file.Name() + ".ppindex"
+	index := pb.Index{}
+	IndexFile, err := os.ReadFile(indexPath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	proto.Unmarshal(IndexFile, &index)
+
 	writer := bufio.NewWriter(file)
 	for {
 		chunk := pb.Chunk{}
@@ -125,6 +133,8 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 		if err != nil {
 			log.Println(err)
 		}
+		index.Progress += 1
+		index.Save()
 	}
 	return writer.Flush()
 }

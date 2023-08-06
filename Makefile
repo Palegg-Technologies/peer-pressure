@@ -13,3 +13,6 @@ build-pair:
 clearlog-pair:
 	> log
 	> testdir/log
+
+test-pair: clearlog-pair build-pair
+	./peer-pressure

@@ -80,7 +80,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch m.state {
 	case newNodeForm:
-		return nodeCreate.Update(m, msg, m.cursor)
+		return nodeCreate.Update(m, msg)
 
 	case oldNodeMenu:
 		return crrNode.Update(m, msg)

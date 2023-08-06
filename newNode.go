@@ -20,7 +20,7 @@ type createFormModel struct {
 	focused int
 }
 
-func (m *createFormModel) Update(parent *model, msg tea.Msg, option int) (tea.Model, tea.Cmd) {
+func (m *createFormModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, 2)
 
 	switch msg := msg.(type) {
@@ -28,7 +28,7 @@ func (m *createFormModel) Update(parent *model, msg tea.Msg, option int) (tea.Mo
 		switch msg.Type {
 		case tea.KeyEnter:
 			name := m.inputs[0].Value()
-			createNewNode(name, m.inputs[1].Value(), option)
+			createNewNode(name, m.inputs[1].Value())
 			newChoice := name
 			parent.Tabs = parent.Tabs[:1]
 			parent.state = 0
@@ -99,7 +99,7 @@ func (m createFormModel) View() string {
 	) + "\n" + tui.FooterStyle.Render(footer)
 }
 
-func createNewNode(name string, rendezvous string, opt int) {
+func createNewNode(name string, rendezvous string) {
 	p, err := peer.New(name, rendezvous)
 	if err != nil {
 		panic(err)

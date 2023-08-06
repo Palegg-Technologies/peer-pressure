@@ -9,6 +9,9 @@ const (
 	deepPink     = lipgloss.Color("#B5179E")
 	ceruleanBlue = lipgloss.Color("#05A7E0")
 	deepPurple   = lipgloss.Color("#560BAD")
+
+	brighRed = lipgloss.Color("#D00000")
+	white    = lipgloss.Color("#000000")
 )
 
 var (
@@ -24,4 +27,6 @@ var (
 
 	NNInputStyle    = lipgloss.NewStyle().Foreground(hotPink)
 	NNContinueStyle = lipgloss.NewStyle().Foreground(darkGray)
+
+	ErrorTextStyle = lipgloss.NewStyle().Background(brighRed).Foreground(white)
 )

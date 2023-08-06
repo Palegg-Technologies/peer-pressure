@@ -19,23 +19,20 @@ import (
 
 const chunkSize = 4096
 
-func AppendStringToFile(path string, content string) {
+func AppendStringToFile(path string, content string) (err error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
-		log.Panicln(err)
+		return
 	}
 	defer file.Close()
 
 	writer := bufio.NewWriter(file)
 	_, err = writer.WriteString(content)
 	if err != nil {
-		log.Panicln(err)
+		return
 	}
 
-	err = writer.Flush()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	return writer.Flush()
 }
 
 func FileToStream(rw *bufio.ReadWriter, file *os.File) {

@@ -103,27 +103,29 @@ func Load(name string) (*Peer, error) {
 	}, nil
 }
 
-func (p *Peer) Save() error {
+func (p *Peer) Save() (err error) {
 	// make directory for node info
-	err := os.MkdirAll(p.peerDir, os.ModePerm)
+	err = os.MkdirAll(p.peerDir, os.ModePerm)
 	if err != nil {
-		return err
+		return
 	}
 
 	// write private key
 	privBytes, err := crypto.MarshalPrivateKey(p.privKey)
 	if err != nil {
-		return err
+		return
 	}
-	util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.priv"), string(privBytes))
+	err = util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.priv"), string(privBytes))
+	if err != nil {
+		return
+	}
 
 	// write public key
 	pubBytes, err := crypto.MarshalPublicKey(p.PubKey)
 	if err != nil {
-		return err
+		return
 	}
-	util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.pub"), string(pubBytes))
-	return nil
+	return util.AppendStringToFile(filepath.Join(p.peerDir, "rsa.pub"), string(pubBytes))
 }
 
 func (p *Peer) DiscoverPeers(ctx context.Context) (<-chan peer.AddrInfo, error) {

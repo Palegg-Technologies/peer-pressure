@@ -78,7 +78,11 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 
 			case "Receive":
 				// parent.state += 2
-				receiveFile(context.Background(), m.name)
+				err := receiveFile(context.Background(), m.name)
+				if err != nil {
+					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+					cmds = append(cmds, tea.Quit)
+				}
 			}
 
 		}
@@ -113,10 +117,10 @@ func (m oldNodeMenuModel) View() string {
 	return s
 }
 
-func receiveFile(ctx context.Context, nodeName string) {
+func receiveFile(ctx context.Context, nodeName string) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	h := p.Node
@@ -132,7 +136,6 @@ func receiveFile(ctx context.Context, nodeName string) {
 			log.Debugln("index file found, using existing index")
 			err = proto.Unmarshal(existingIndex, &index)
 			if err != nil {
-				log.Errorln("Error unmarshaling existing index:", err)
 				return
 			}
 		} else {
@@ -147,7 +150,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		str := pb.Marshal(&cr)
 		_, err = rw.Write(str)
 		if err != nil {
-			panic(err)
+			return
 		}
 		log.Debugln(rw.Flush())
 
@@ -163,13 +166,13 @@ func receiveFile(ctx context.Context, nodeName string) {
 
 		err = util.StreamToFile(rw, f)
 		if err != nil {
-			log.Errorln("error writing stream to file:", err)
+			return
 		}
 	})
 
 	peerChan, err := p.DiscoverPeers(ctx)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	log.Printf("R Peer ID: %s\n\n", h.ID())
@@ -189,6 +192,7 @@ func receiveFile(ctx context.Context, nodeName string) {
 		log.Printf("Receiver wait round: %d", i)
 		time.Sleep(time.Duration(5) * time.Second)
 	}
+	return
 }
 
 func sendFile(ctx context.Context, nodeName string, sendFilePath string) {

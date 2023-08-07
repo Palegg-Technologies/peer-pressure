@@ -125,7 +125,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			crrNode.progress.SetPercent(0)
 			m.Tabs = m.Tabs[:1]
 		} else {
-			log.Debugln(crrNode.progress.tempPerc)
 			cmds = append(cmds, crrNode.progress.SetPercent(crrNode.progress.tempPerc))
 		}
 

@@ -1,4 +1,11 @@
 # peer-pressure
 A decentralized file sharing TUI application.
 
-docker container run -v /home/azan/Projects/peer-pressure:/workspaces/peer-pressure -it vsc-peer-pressure-d4b1f0793834c90cbe066ba418652bc5-uid /bin/bash
+
+## Demo
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Azanul/peer-pressure/blob/master/sender_demo.gif">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Azanul/peer-pressure/blob/master/sender_demo.gif">
+  <img width="600" alt="Example of setting the margin" src="https://github.com/Azanul/peer-pressure/blob/master/sender_demo.gif">
+</picture>

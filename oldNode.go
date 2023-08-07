@@ -123,6 +123,8 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 		return
 	}
 
+	foundSender := false // flag for closing receiver
+
 	h := p.Node
 	h.SetStreamHandler(TCPProtocolID, func(stream network.Stream) {
 		// Create a buffer stream for non blocking read and write.
@@ -176,6 +178,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 			log.Errorln(err)
 			return
 		}
+		foundSender = true
 	})
 
 	peerChan, err := p.DiscoverPeers(ctx)
@@ -185,7 +188,6 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 
 	log.Printf("R Peer ID: %s\n\n", h.ID())
 	for i := 0; i < 30; i++ {
-		foundSender := false
 		for peer := range peerChan {
 			if peer.ID == h.ID() {
 				continue // No self connection

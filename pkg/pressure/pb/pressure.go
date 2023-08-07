@@ -42,12 +42,12 @@ func Read[T pressure](r io.Reader, x T) (err error) {
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
 	if err != nil {
-		return fmt.Errorf("error reading %s from buffer: %v", x.ProtoReflect().Type().Descriptor().FullName(), err)
+		return fmt.Errorf("error reading %s from buffer: %s", x.ProtoReflect().Type().Descriptor().FullName(), err)
 	}
 
 	err = proto.Unmarshal(str, x)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling proto %s: %v", x.ProtoReflect().Type().Descriptor().FullName(), err)
+		return fmt.Errorf("error unmarshaling proto %s: %s", x.ProtoReflect().Type().Descriptor().FullName(), err)
 	}
 	return
 }

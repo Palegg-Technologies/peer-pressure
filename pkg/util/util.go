@@ -111,7 +111,7 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 	writer := bufio.NewWriter(file)
 	for {
 		chunk := &pb.Chunk{}
-		pb.Read(rw.Reader, chunk)
+		err = pb.Read(rw.Reader, chunk)
 		if err == io.EOF {
 			log.Printf("%s done writing", file.Name())
 			break

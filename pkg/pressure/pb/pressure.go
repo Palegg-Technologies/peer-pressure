@@ -2,6 +2,7 @@ package pb
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 
@@ -33,21 +34,22 @@ func (x *Index) Save() {
 	}
 }
 
-func Read[T pressure](r io.Reader, x T) {
+func Read[T pressure](r io.Reader, x T) (err error) {
 	messageSize, err := readMessageLen(r)
 	if err != nil {
-		log.Panicf("Error marshaling proto %s message: %v\n", x.ProtoReflect().Type(), err)
+		return err
 	}
 	str := make([]byte, messageSize)
 	_, err = io.ReadFull(r, str)
 	if err != nil {
-		log.Panicf("Error reading %s from buffer: %v\n", x.ProtoReflect().Type(), err)
+		return fmt.Errorf("error reading %s from buffer: %v", x.ProtoReflect().Type().Descriptor().FullName(), err)
 	}
 
 	err = proto.Unmarshal(str, x)
 	if err != nil {
-		log.Panicf("Error unmarshaling proto %s: %v\n", x.ProtoReflect().Type(), err)
+		return fmt.Errorf("error unmarshaling proto %s: %v", x.ProtoReflect().Type().Descriptor().FullName(), err)
 	}
+	return
 }
 
 func Marshal[T pressure](x T) []byte {

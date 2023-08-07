@@ -129,13 +129,18 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 		index := pb.Index{}
-		pb.Read(rw.Reader, &index)
+		err := pb.Read(rw.Reader, &index)
+		if err != nil {
+			log.Errorln(err)
+			return
+		}
 		indexPath := "nodes/" + index.GetFilename() + ".ppindex"
 		existingIndex, err := os.ReadFile(indexPath)
 		if err == nil {
 			log.Debugln("index file found, using existing index")
 			err = proto.Unmarshal(existingIndex, &index)
 			if err != nil {
+				log.Errorln(err)
 				return
 			}
 		} else {
@@ -150,6 +155,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 		str := pb.Marshal(&cr)
 		_, err = rw.Write(str)
 		if err != nil {
+			log.Errorln(err)
 			return
 		}
 		log.Debugln(rw.Flush())
@@ -161,11 +167,13 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 		}
 		if err != nil {
 			log.Errorf("error opening/creating file %s: %v\n", dest, err)
+			log.Errorln(err)
 			return
 		}
 
 		err = util.StreamToFile(rw, f)
 		if err != nil {
+			log.Errorln(err)
 			return
 		}
 	})

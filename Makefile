@@ -10,6 +10,10 @@ build-pair:
 	go build .
 	go build -o ./testdir/peer-pressure .
 
+build-darwin_arm64-pair:
+	env GOOS=darwin GOARCH=arm64 go build -o peer-pressure_darwin_arm64 .
+	env GOOS=darwin GOARCH=arm64 go build -o ./testdir/peer-pressure_darwin_arm64 .
+
 clearlog-pair:
 	> log
 	> testdir/log

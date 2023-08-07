@@ -37,7 +37,15 @@ var (
 		name:       "test",
 		choices:    []string{"Send", "Receive"},
 		filepicker: filepicker.New(),
-		progress:   progress.New(progress.WithDefaultGradient()),
+		progress: struct {
+			progress.Model
+			ch       chan float64
+			tempPerc float64
+		}{
+			progress.New(progress.WithDefaultGradient()),
+			make(chan float64),
+			0,
+		},
 	}
 )
 
@@ -74,7 +82,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case progress.FrameMsg:
 		progressModel, cmd := crrNode.progress.Update(msg)
-		crrNode.progress = progressModel.(progress.Model)
+		crrNode.progress.Model = progressModel.(progress.Model)
 		cmds = append(cmds, cmd)
 	}
 
@@ -90,11 +98,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Did the user select a file?
 		if didSelect, path := crrNode.filepicker.DidSelectFile(msg); didSelect {
-			err := sendFile(context.TODO(), crrNode.name, path)
-			if err != nil {
-				fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
-				cmd = tea.Quit
-			}
+			go func() {
+				go func() {
+					for c := range crrNode.progress.ch {
+						if c < 0 {
+							return
+						} else {
+							crrNode.progress.tempPerc = min(c, 1)
+						}
+					}
+				}()
+				err := sendFile(context.TODO(), crrNode.name, path, crrNode.progress.ch)
+				if err != nil {
+					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+					cmd = tea.Quit
+				}
+			}()
 			m.state++
 		}
 		return m, cmd
@@ -102,10 +121,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case sendLoader:
 		if crrNode.progress.Percent() == 1 {
 			m.state = 0
+			crrNode.progress.tempPerc = 0
 			crrNode.progress.SetPercent(0)
 			m.Tabs = m.Tabs[:1]
 		} else {
-			cmds = append(cmds, crrNode.progress.IncrPercent(0.01))
+			log.Debugln(crrNode.progress.tempPerc)
+			cmds = append(cmds, crrNode.progress.SetPercent(crrNode.progress.tempPerc))
 		}
 
 	default:
@@ -264,4 +285,11 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
+}
+
+func min(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
 }

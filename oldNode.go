@@ -29,7 +29,11 @@ type oldNodeMenuModel struct {
 	cursor     int
 	choices    []string
 	filepicker filepicker.Model
-	progress   progress.Model
+	progress   struct {
+		progress.Model
+		ch       chan float64
+		tempPerc float64
+	}
 }
 
 func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -210,7 +214,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 	return
 }
 
-func sendFile(ctx context.Context, nodeName string, sendFilePath string) (err error) {
+func sendFile(ctx context.Context, nodeName string, sendFilePath string, progressCh chan float64) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
 		return
@@ -244,7 +248,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string) (err er
 					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					return
 				}
-				util.FileToStream(rw, f)
+				util.FileToStream(rw, f, progressCh)
 				stream.Close()
 			}()
 		}

@@ -14,7 +14,7 @@ Welcome to PeerPressure – where high-speed peer-to-peer communication meets un
 
 - **Immersive Streaming**: Immerse yourself in real-time streaming of audio, video, basically any file. Zero buffering, zero lag – only instantaneous satisfaction.
 
-- **Platform Harmony**: PeerPressure extends its reach to major platforms – macOS & Linux (soon extedning to Windows, Android & iOS) – ensuring you stay connected on any device.
+- **Platform Harmony**: PeerPressure extends its reach to major platforms – macOS, Linux & Windows (soon coming to Android & iOS) – ensuring you stay connected on any device.
 
 - **Effortless Sharing**: Sharing files and messages has never been smoother. Our user-friendly interface streamlines the sharing process, empowering you to concentrate on what truly matters.
 

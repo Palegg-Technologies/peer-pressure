@@ -12,10 +12,9 @@ import (
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
-	"github.com/Azanul/peer-pressure/pkg/util"
+	"github.com/Azanul/peer-pressure/pkg/streamio"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -29,11 +28,7 @@ type oldNodeMenuModel struct {
 	cursor     int
 	choices    []string
 	filepicker filepicker.Model
-	progress   struct {
-		progress.Model
-		ch       chan float64
-		tempPerc float64
-	}
+	transfer   peer.Transfer
 }
 
 func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -177,7 +172,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 			return
 		}
 
-		err = util.StreamToFile(rw, f)
+		err = streamio.StreamToFile(rw, f)
 		if err != nil {
 			log.Errorln(err)
 			return
@@ -214,7 +209,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 	return
 }
 
-func sendFile(ctx context.Context, nodeName string, sendFilePath string, progressCh chan float64) (err error) {
+func sendFile(ctx context.Context, nodeName string, sendFilePath string, progressCh chan peer.Event) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
 		return
@@ -248,7 +243,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string, progres
 					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					return
 				}
-				util.FileToStream(rw, f, progressCh)
+				streamio.FileToStream(rw, f, progressCh)
 				stream.Close()
 			}()
 		}

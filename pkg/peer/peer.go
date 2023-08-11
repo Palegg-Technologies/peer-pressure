@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/bubbles/progress"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/util"
@@ -184,6 +185,28 @@ func (p *Peer) GetPeerDir() string {
 
 func (p *Peer) GetRendezvous() string {
 	return p.rendezvous
+}
+
+type SignalType int8
+
+type Event struct {
+	Type SignalType
+	Data interface{}
+}
+
+type Command struct {
+	Type SignalType
+}
+
+type Transfer struct {
+	Progress  progress.Model
+	EventCh   chan Event
+	CommandCh chan Command
+	TempPerc  float64
+}
+
+func (t *Transfer) Pause() {
+
 }
 
 func loadResourceManager() network.ResourceManager {

@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/tui"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/progress"
@@ -37,14 +38,11 @@ var (
 		name:       "test",
 		choices:    []string{"Send", "Receive"},
 		filepicker: filepicker.New(),
-		progress: struct {
-			progress.Model
-			ch       chan float64
-			tempPerc float64
-		}{
-			progress.New(progress.WithDefaultGradient()),
-			make(chan float64),
-			0,
+		transfer: peer.Transfer{
+			Progress:  progress.New(progress.WithDefaultGradient()),
+			EventCh:   make(chan peer.Event),
+			CommandCh: make(chan peer.Command),
+			TempPerc:  0,
 		},
 	}
 )
@@ -81,8 +79,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 	case progress.FrameMsg:
-		progressModel, cmd := crrNode.progress.Update(msg)
-		crrNode.progress.Model = progressModel.(progress.Model)
+		progressModel, cmd := crrNode.transfer.Progress.Update(msg)
+		crrNode.transfer.Progress = progressModel.(progress.Model)
 		cmds = append(cmds, cmd)
 	}
 
@@ -100,15 +98,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if didSelect, path := crrNode.filepicker.DidSelectFile(msg); didSelect {
 			go func() {
 				go func() {
-					for c := range crrNode.progress.ch {
-						if c < 0 {
+					for c := range crrNode.transfer.EventCh {
+						data := c.Data.(float64)
+						if data < 0 {
 							return
 						} else {
-							crrNode.progress.tempPerc = min(c, 1)
+							crrNode.transfer.TempPerc = min(data, 1)
 						}
 					}
 				}()
-				err := sendFile(context.TODO(), crrNode.name, path, crrNode.progress.ch)
+				err := sendFile(context.TODO(), crrNode.name, path, crrNode.transfer.EventCh)
 				if err != nil {
 					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					cmd = tea.Quit
@@ -119,13 +118,32 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case sendLoader:
-		if crrNode.progress.Percent() == 1 {
+
+		switch msg := msg.(type) {
+
+		// Is it a key press?
+		case tea.KeyMsg:
+
+			// Cool, what was the actual key pressed?
+			switch msg.String() {
+
+			// These keys should exit the program.
+			case "ctrl+c", "q", "esc":
+				return m, tea.Quit
+
+			// These keys should pause the transfer.
+			case "space":
+				crrNode.transfer.Pause()
+			}
+		}
+
+		if crrNode.transfer.Progress.Percent() == 1 {
 			m.state = 0
-			crrNode.progress.tempPerc = 0
-			crrNode.progress.SetPercent(0)
+			crrNode.transfer.TempPerc = 0
+			crrNode.transfer.Progress.SetPercent(0)
 			m.Tabs = m.Tabs[:1]
 		} else {
-			cmds = append(cmds, crrNode.progress.SetPercent(crrNode.progress.tempPerc))
+			cmds = append(cmds, crrNode.transfer.Progress.SetPercent(crrNode.transfer.TempPerc))
 		}
 
 	default:
@@ -225,7 +243,7 @@ func (m model) View() string {
 		s += "\n\n" + crrNode.filepicker.View()
 
 	case sendLoader:
-		s += "\n\n" + crrNode.progress.View()
+		s += "\n\n" + crrNode.transfer.Progress.View()
 
 	case receiveFileMenu:
 		tea.Println("Not yet implemented")

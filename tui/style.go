@@ -15,18 +15,19 @@ const (
 )
 
 var (
-	HeaderStyle = lipgloss.NewStyle().Foreground(skyBlue)
-	FooterStyle = lipgloss.NewStyle().Foreground(skyBlue)
+	HeaderStyle = lipgloss.NewStyle().Foreground(skyBlue).Render
+	FooterStyle = lipgloss.NewStyle().Foreground(skyBlue).Render
 
 	tabStyle  = lipgloss.NewStyle().Padding(0, 2)
-	TabStyles = []lipgloss.Style{
-		tabStyle.Copy().Background(deepPink),
-		tabStyle.Copy().Background(ceruleanBlue),
-		tabStyle.Background(deepPurple),
+	TabStyles = []func(strs ...string) string{
+		tabStyle.Copy().Background(deepPink).Render,
+		tabStyle.Copy().Background(ceruleanBlue).Render,
+		tabStyle.Background(deepPurple).Render,
 	}
 
-	NNInputStyle    = lipgloss.NewStyle().Foreground(hotPink)
-	NNContinueStyle = lipgloss.NewStyle().Foreground(darkGray)
+	width           = 30
+	NNInputStyle    = lipgloss.NewStyle().Foreground(hotPink).Width(width).Render
+	NNContinueStyle = lipgloss.NewStyle().Foreground(darkGray).Width(width).Render
 
-	ErrorTextStyle = lipgloss.NewStyle().Background(brighRed).Foreground(white)
+	ErrorTextStyle = lipgloss.NewStyle().Background(brighRed).Foreground(white).Render
 )

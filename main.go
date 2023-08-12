@@ -109,7 +109,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}()
 				err := sendFile(context.TODO(), crrNode.name, path, crrNode.transfer.EventCh, crrNode.transfer.CommandCh)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+					fmt.Println(tui.ErrorTextStyle(err.Error()))
 					cmd = tea.Quit
 				}
 			}()
@@ -181,7 +181,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// the selected state for the item that the cursor is pointing at.
 			case "enter", " ":
 				choice := m.choices[m.cursor]
-				m.Tabs = append(m.Tabs, tui.TabStyles[len(m.Tabs)].Render(choice))
+				m.Tabs = append(m.Tabs, tui.TabStyles[len(m.Tabs)](choice))
 
 				if choice == "Create new node" {
 					m.state++
@@ -206,7 +206,7 @@ func (m model) View() string {
 	switch m.state {
 	case mainMenu:
 		// The header
-		header := tui.HeaderStyle.Render("Create new node or select an already existing one\n")
+		header := tui.HeaderStyle("Create new node or select an already existing one\n")
 
 		mainChoices := ""
 		// Iterate over our choices
@@ -231,7 +231,7 @@ func (m model) View() string {
 			footer = "\nPress ◀ / Backspace to go back"
 		}
 		footer += "\nPress q to quit.\n"
-		s += tui.FooterStyle.Render(footer)
+		s += tui.FooterStyle(footer)
 
 	case newNodeForm:
 		s += nodeCreate.View()
@@ -251,7 +251,7 @@ func (m model) View() string {
 		} else {
 			footer += "Press space to pause"
 		}
-		s += tui.FooterStyle.Render(footer)
+		s += tui.FooterStyle(footer)
 
 	case receiveFileMenu:
 		tea.Println("Not yet implemented")
@@ -290,7 +290,7 @@ func initialModel() model {
 
 	mainModel := model{
 		choices: choices,
-		Tabs:    []string{tui.TabStyles[0].Render("Main Menu")},
+		Tabs:    []string{tui.TabStyles[0]("Main Menu")},
 	}
 	return mainModel
 }

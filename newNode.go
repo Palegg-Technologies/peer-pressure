@@ -91,12 +91,12 @@ func (m createFormModel) View() string {
 
  %s
 `,
-		tui.NNInputStyle.Width(30).Render("Name"),
+		tui.NNInputStyle("Name"),
 		m.inputs[0].View(),
-		tui.NNInputStyle.Width(30).Render("Rendezvous"),
+		tui.NNInputStyle("Rendezvous"),
 		m.inputs[1].View(),
-		tui.NNContinueStyle.Render("Continue ->"),
-	) + "\n" + tui.FooterStyle.Render(footer)
+		tui.NNContinueStyle("Continue ->"),
+	) + "\n" + tui.FooterStyle(footer)
 }
 
 func createNewNode(name string, rendezvous string) {

@@ -68,7 +68,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
 			choice := m.choices[m.cursor]
-			parent.Tabs = append(parent.Tabs, tui.TabStyles[len(parent.Tabs)].Render(choice))
+			parent.Tabs = append(parent.Tabs, tui.TabStyles[len(parent.Tabs)](choice))
 
 			switch choice {
 			case "Send":
@@ -79,7 +79,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 				// parent.state += 2
 				err := receiveFile(context.Background(), m.name)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+					fmt.Println(tui.ErrorTextStyle(err.Error()))
 					cmds = append(cmds, tea.Quit)
 				}
 			}
@@ -110,7 +110,7 @@ func (m oldNodeMenuModel) View() string {
 
 	// The footer
 	footer := ""
-	s += tui.FooterStyle.Render(footer)
+	s += tui.FooterStyle(footer)
 
 	// Send the UI for rendering
 	return s
@@ -240,7 +240,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string, eventCh
 			go func() {
 				f, err := os.Open(sendFilePath)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
+					fmt.Println(tui.ErrorTextStyle(err.Error()))
 					return
 				}
 				streamio.FileToStream(rw, f, eventCh, cmdCh)

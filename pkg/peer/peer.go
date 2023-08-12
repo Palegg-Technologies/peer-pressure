@@ -189,24 +189,59 @@ func (p *Peer) GetRendezvous() string {
 
 type SignalType int8
 
+const (
+	Pause Command = iota
+	Continue
+	Stop
+)
+
 type Event struct {
 	Type SignalType
 	Data interface{}
 }
 
-type Command struct {
-	Type SignalType
-}
+type Command SignalType
+
+type transferState int8
+
+const (
+	active transferState = iota
+	paused
+	inactive
+)
 
 type Transfer struct {
+	state     transferState
 	Progress  progress.Model
 	EventCh   chan Event
 	CommandCh chan Command
 	TempPerc  float64
 }
 
+func (t *Transfer) Paused() bool {
+	return t.state == paused
+}
 func (t *Transfer) Pause() {
+	t.CommandCh <- Pause
+	t.state = paused
+}
 
+func (t *Transfer) Continue() {
+	t.CommandCh <- Continue
+	t.state = active
+}
+
+func (t *Transfer) Toggle() {
+	if t.state == paused {
+		t.Continue()
+	} else {
+		t.Pause()
+	}
+}
+
+func (t *Transfer) Stop() {
+	t.CommandCh <- Continue
+	t.state = inactive
 }
 
 func loadResourceManager() network.ResourceManager {

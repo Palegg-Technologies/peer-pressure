@@ -17,7 +17,7 @@ import (
 
 const chunkSize = 4096
 
-func FileToStream(rw *bufio.ReadWriter, file *os.File, progressCh chan peer.Event) {
+func FileToStream(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, cmdCh chan peer.Command) {
 	data := make([]byte, chunkSize)
 	filename := filepath.Base(file.Name())
 	fileInfo, _ := file.Stat()
@@ -49,6 +49,7 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File, progressCh chan peer.Even
 		log.Panicln(err)
 	}
 
+STREAM_LOOP:
 	for {
 		n, err := file.Read(data)
 		lenData := int32(n)
@@ -76,14 +77,24 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File, progressCh chan peer.Even
 		if err != nil {
 			log.Panicln("Error flushing buffer:", err)
 		}
-		progressCh <- peer.Event{
-			1,
-			float64(partNum) * chunkSize / float64(fileInfo.Size()),
+		eventCh <- peer.Event{
+			Type: 1,
+			Data: float64(partNum) * chunkSize / float64(fileInfo.Size()),
+		}
+		select {
+		case cmd := <-cmdCh:
+			if cmd == peer.Pause {
+				cmd = <-cmdCh
+			}
+			if cmd == peer.Stop {
+				break STREAM_LOOP
+			}
+		default:
 		}
 	}
-	progressCh <- peer.Event{
-		1,
-		nil,
+	eventCh <- peer.Event{
+		Type: 1,
+		Data: nil,
 	}
 }
 

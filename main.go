@@ -107,7 +107,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}()
-				err := sendFile(context.TODO(), crrNode.name, path, crrNode.transfer.EventCh)
+				err := sendFile(context.TODO(), crrNode.name, path, crrNode.transfer.EventCh, crrNode.transfer.CommandCh)
 				if err != nil {
 					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					cmd = tea.Quit
@@ -118,7 +118,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case sendLoader:
-
 		switch msg := msg.(type) {
 
 		// Is it a key press?
@@ -129,11 +128,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// These keys should exit the program.
 			case "ctrl+c", "q", "esc":
+				crrNode.transfer.Stop()
 				return m, tea.Quit
 
-			// These keys should pause the transfer.
+			// These keys should pause/continue the transfer.
 			case "space":
-				crrNode.transfer.Pause()
+				crrNode.transfer.Toggle()
 			}
 		}
 
@@ -244,6 +244,14 @@ func (m model) View() string {
 
 	case sendLoader:
 		s += "\n\n" + crrNode.transfer.Progress.View()
+		footer := ""
+		if crrNode.transfer.Paused() {
+			footer = "\t\tPAUSED\n\n"
+			footer += "Press space to continue"
+		} else {
+			footer += "Press space to pause"
+		}
+		s += tui.FooterStyle.Render(footer)
 
 	case receiveFileMenu:
 		tea.Println("Not yet implemented")

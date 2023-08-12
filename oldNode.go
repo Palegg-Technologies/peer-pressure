@@ -209,7 +209,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 	return
 }
 
-func sendFile(ctx context.Context, nodeName string, sendFilePath string, progressCh chan peer.Event) (err error) {
+func sendFile(ctx context.Context, nodeName string, sendFilePath string, eventCh chan peer.Event, cmdCh chan peer.Command) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
 		return
@@ -243,7 +243,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string, progres
 					fmt.Println(tui.ErrorTextStyle.Render(err.Error()))
 					return
 				}
-				streamio.FileToStream(rw, f, progressCh)
+				streamio.FileToStream(rw, f, eventCh, cmdCh)
 				stream.Close()
 			}()
 		}

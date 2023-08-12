@@ -1,0 +1,28 @@
+name: Publish release to GitHub
+on:
+  workflow_dispatch:
+
+jobs:
+  version-bump:
+    name: Release to github releases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+     
+      - name: Build
+        run: make build-all
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          release_name: v${{ github.ref }}
+          tag_name: 'Prod'
+          prerelease: false
+          files: |
+            peer-pressure_linux_arm64
+	          peer-pressure_linux_amd64
+            peer-pressure_linux_386
+            peer-pressure_darwin_arm64
+            peer-pressure_windows_amd64
+            peer-pressure_windows_386

@@ -5,10 +5,8 @@ package pressure.pb;
 option go_package = "./pkg/pressure/pb";
 
 message Chunk {
-    optional int32 len = 1; // No. of bytes of data in this chunk
     int32 index = 2; // Index of the chunk being sent
     bytes data = 3;
-    optional string filename = 4;
 }
 
 message ChunkRequest {

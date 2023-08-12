@@ -2,7 +2,6 @@ package streamio
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"math"
 	"os"
@@ -51,8 +50,7 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, 
 
 STREAM_LOOP:
 	for {
-		n, err := file.Read(data)
-		lenData := int32(n)
+		_, err := file.Read(data)
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -62,10 +60,8 @@ STREAM_LOOP:
 
 		partNum++
 		chunk := &pb.Chunk{
-			Index:    partNum,
-			Data:     data,
-			Filename: &filename,
-			Len:      &lenData,
+			Index: partNum,
+			Data:  data,
 		}
 		str := pb.Marshal(chunk)
 		_, err = rw.Write(str)
@@ -116,17 +112,11 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 			log.Printf("%s done writing", file.Name())
 			break
 		} else if err != nil {
-			fmt.Println("Error reading from buffer")
+			log.Println("Error reading from buffer")
 			return err
 		}
 
-		var data []byte
-		if chunk.Len == nil {
-			data = chunk.Data
-		} else {
-			data = chunk.Data[:*chunk.Len]
-		}
-		_, err = writer.Write(data)
+		_, err = writer.Write(chunk.Data)
 		if err != nil {
 			log.Println(err)
 		}

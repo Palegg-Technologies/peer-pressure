@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  Setup:
+  setup:
     runs-on: ubuntu-latest
     steps:
     - name: Check out repo
@@ -29,16 +29,16 @@ jobs:
     - name: Install VHS
       run: go install github.com/charmbracelet/vhs@latest
   
-  Record receiver:
+  record-receiver:
     runs-on: ubuntu-latest
-    needs: [Setup]
+    needs: [setup]
     steps:
     - name: Record receiver
       run: vhs receiver_demo.tape
 
-  Record sender:
+  record-sender:
     runs-on: ubuntu-latest
-    needs: [Setup]
+    needs: [setup]
     steps:
     - name: Download a 200MB test file
       run: curl -LJO http://ipv4.download.thinkbroadband.com/200MB.zip
@@ -46,8 +46,10 @@ jobs:
     - name: Record sender
       run: vhs sender_demo.tape
 
-  - name: Commit and push
-      run: |-
+  Commit:
+    needs: [record-receiver, record-sender]
+    steps:
+    - run: |-
         cd main
         git config --global user.email "actions@users.noreply.github.com"
         git config --global user.name "DEMO-bot"

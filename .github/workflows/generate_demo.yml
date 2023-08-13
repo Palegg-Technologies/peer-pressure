@@ -47,6 +47,7 @@ jobs:
       run: vhs sender_demo.tape
 
   Commit:
+    runs-on: ubuntu-latest
     needs: [record-receiver, record-sender]
     steps:
     - run: |-

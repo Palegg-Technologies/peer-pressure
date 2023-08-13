@@ -1,5 +1,6 @@
-Set Shell zsh
-Type "./peer-pressure_darwin_arm64"
+Output receiver_demo.gif
+
+Type "./peer-pressure"
 Enter
 Sleep 1s
 Down

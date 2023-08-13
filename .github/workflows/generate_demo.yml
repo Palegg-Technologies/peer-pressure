@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+    - name: Check out repo
+      uses: actions/checkout@v3
+      with:
+        sparse-checkout: receiver_demo.tape
+
     - name: Record receiver
       uses: charmbracelet/vhs-action@v2.0.0
       with:
@@ -36,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+    - name: Check out repo
+      uses: actions/checkout@v3
+      with:
+        sparse-checkout: sender_demo.tape
+
     - name: Download a 200MB test file
       run: curl -LJO http://ipv4.download.thinkbroadband.com/200MB.zip
 

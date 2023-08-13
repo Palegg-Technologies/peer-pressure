@@ -21,7 +21,7 @@ jobs:
           prerelease: false
           files: |
             peer-pressure_linux_arm64
-	          peer-pressure_linux_amd64
+            peer-pressure_linux_amd64
             peer-pressure_linux_386
             peer-pressure_darwin_arm64
             peer-pressure_windows_amd64

@@ -94,7 +94,7 @@ STREAM_LOOP:
 	}
 }
 
-func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
+func StreamToFile(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, cmdCh chan peer.Command) {
 	indexPath := file.Name() + ".ppindex"
 	index := pb.Index{}
 	IndexFile, err := os.ReadFile(indexPath)
@@ -105,6 +105,7 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 	proto.Unmarshal(IndexFile, &index)
 
 	writer := bufio.NewWriter(file)
+STREAM_LOOP:
 	for {
 		chunk := &pb.Chunk{}
 		err = pb.Read(rw.Reader, chunk)
@@ -113,7 +114,7 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 			break
 		} else if err != nil {
 			log.Println("Error reading from buffer")
-			return err
+			return
 		}
 
 		_, err = writer.Write(chunk.Data)
@@ -122,6 +123,26 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File) (err error) {
 		}
 		index.Progress += 1
 		index.Save()
+
+		eventCh <- peer.Event{
+			Type: 1,
+			Data: index.Progress,
+		}
+		select {
+		case cmd := <-cmdCh:
+			if cmd == peer.Pause {
+				cmd = <-cmdCh
+			}
+			if cmd == peer.Stop {
+				break STREAM_LOOP
+			}
+		default:
+		}
 	}
-	return writer.Flush()
+	eventCh <- peer.Event{
+		Type: 1,
+		Data: nil,
+	}
+
+	writer.Flush()
 }

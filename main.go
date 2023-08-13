@@ -55,7 +55,7 @@ const (
 	oldNodeMenu
 	sendFileExplorer
 	sendLoader
-	receiveFileMenu
+	receiveLoader
 )
 
 type model struct {
@@ -118,6 +118,35 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case sendLoader:
+		switch msg := msg.(type) {
+
+		// Is it a key press?
+		case tea.KeyMsg:
+
+			// Cool, what was the actual key pressed?
+			switch msg.String() {
+
+			// These keys should exit the program.
+			case "ctrl+c", "q", "esc":
+				crrNode.transfer.Stop()
+				return m, tea.Quit
+
+			// These keys should pause/continue the transfer.
+			case "space":
+				crrNode.transfer.Toggle()
+			}
+		}
+
+		if crrNode.transfer.Progress.Percent() == 1 {
+			m.state = 0
+			crrNode.transfer.TempPerc = 0
+			crrNode.transfer.Progress.SetPercent(0)
+			m.Tabs = m.Tabs[:1]
+		} else {
+			cmds = append(cmds, crrNode.transfer.Progress.SetPercent(crrNode.transfer.TempPerc))
+		}
+
+	case receiveLoader:
 		switch msg := msg.(type) {
 
 		// Is it a key press?
@@ -253,7 +282,7 @@ func (m model) View() string {
 		}
 		s += tui.FooterStyle(footer)
 
-	case receiveFileMenu:
+	case receiveLoader:
 		tea.Println("Not yet implemented")
 	}
 

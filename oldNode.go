@@ -73,11 +73,10 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 			switch choice {
 			case "Send":
 				parent.state++
-				// sendFile(context.Background(), m.name, m.filepicker.FileSelected)
 
 			case "Receive":
-				// parent.state += 2
-				err := receiveFile(context.Background(), m.name)
+				parent.state += 3
+				err := receiveFile(context.Background(), m.name, m.transfer.EventCh, m.transfer.CommandCh)
 				if err != nil {
 					fmt.Println(tui.ErrorTextStyle(err.Error()))
 					cmds = append(cmds, tea.Quit)
@@ -116,7 +115,7 @@ func (m oldNodeMenuModel) View() string {
 	return s
 }
 
-func receiveFile(ctx context.Context, nodeName string) (err error) {
+func receiveFile(ctx context.Context, nodeName string, eventCh chan peer.Event, cmdCh chan peer.Command) (err error) {
 	p, err := peer.Load(nodeName)
 	if err != nil {
 		return
@@ -172,11 +171,7 @@ func receiveFile(ctx context.Context, nodeName string) (err error) {
 			return
 		}
 
-		err = streamio.StreamToFile(rw, f)
-		if err != nil {
-			log.Errorln(err)
-			return
-		}
+		streamio.StreamToFile(rw, f, eventCh, cmdCh)
 		foundSender = true
 	})
 

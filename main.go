@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
-	"github.com/Azanul/peer-pressure/tui"
+	"github.com/Azanul/peer-pressure/tui/style"
 	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -109,7 +109,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}()
 				err := sendFile(context.TODO(), crrNode.name, path, crrNode.transfer.EventCh, crrNode.transfer.CommandCh)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle(err.Error()))
+					fmt.Println(style.ErrorTextStyle(err.Error()))
 					cmd = tea.Quit
 				}
 			}()
@@ -210,7 +210,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// the selected state for the item that the cursor is pointing at.
 			case "enter", " ":
 				choice := m.choices[m.cursor]
-				m.Tabs = append(m.Tabs, tui.TabStyles[len(m.Tabs)](choice))
+				m.Tabs = append(m.Tabs, style.TabStyles[len(m.Tabs)](choice))
 
 				if choice == "Create new node" {
 					m.state++
@@ -235,7 +235,7 @@ func (m model) View() string {
 	switch m.state {
 	case mainMenu:
 		// The header
-		header := tui.HeaderStyle("Create new node or select an already existing one\n")
+		header := style.HeaderStyle("Create new node or select an already existing one\n")
 
 		mainChoices := ""
 		// Iterate over our choices
@@ -260,7 +260,7 @@ func (m model) View() string {
 			footer = "\nPress ◀ / Backspace to go back"
 		}
 		footer += "\nPress q to quit.\n"
-		s += tui.FooterStyle(footer)
+		s += style.FooterStyle(footer)
 
 	case newNodeForm:
 		s += nodeCreate.View()
@@ -280,7 +280,7 @@ func (m model) View() string {
 		} else {
 			footer += "Press space to pause"
 		}
-		s += tui.FooterStyle(footer)
+		s += style.FooterStyle(footer)
 
 	case receiveLoader:
 		tea.Println("Not yet implemented")
@@ -319,7 +319,7 @@ func initialModel() model {
 
 	mainModel := model{
 		choices: choices,
-		Tabs:    []string{tui.TabStyles[0]("Main Menu")},
+		Tabs:    []string{style.TabStyles[0]("Main Menu")},
 	}
 	return mainModel
 }

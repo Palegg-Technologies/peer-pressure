@@ -13,7 +13,7 @@ import (
 	"github.com/Azanul/peer-pressure/pkg/peer"
 	"github.com/Azanul/peer-pressure/pkg/pressure/pb"
 	"github.com/Azanul/peer-pressure/pkg/streamio"
-	"github.com/Azanul/peer-pressure/tui"
+	"github.com/Azanul/peer-pressure/tui/style"
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -68,7 +68,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
 			choice := m.choices[m.cursor]
-			parent.Tabs = append(parent.Tabs, tui.TabStyles[len(parent.Tabs)](choice))
+			parent.Tabs = append(parent.Tabs, style.TabStyles[len(parent.Tabs)](choice))
 
 			switch choice {
 			case "Send":
@@ -78,7 +78,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 				parent.state += 3
 				err := receiveFile(context.Background(), m.name, m.transfer.EventCh, m.transfer.CommandCh)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle(err.Error()))
+					fmt.Println(style.ErrorTextStyle(err.Error()))
 					cmds = append(cmds, tea.Quit)
 				}
 			}
@@ -109,7 +109,7 @@ func (m oldNodeMenuModel) View() string {
 
 	// The footer
 	footer := ""
-	s += tui.FooterStyle(footer)
+	s += style.FooterStyle(footer)
 
 	// Send the UI for rendering
 	return s
@@ -235,7 +235,7 @@ func sendFile(ctx context.Context, nodeName string, sendFilePath string, eventCh
 			go func() {
 				f, err := os.Open(sendFilePath)
 				if err != nil {
-					fmt.Println(tui.ErrorTextStyle(err.Error()))
+					fmt.Println(style.ErrorTextStyle(err.Error()))
 					return
 				}
 				streamio.FileToStream(rw, f, eventCh, cmdCh)

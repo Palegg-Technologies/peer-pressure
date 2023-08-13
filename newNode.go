@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Azanul/peer-pressure/pkg/peer"
-	"github.com/Azanul/peer-pressure/tui"
+	"github.com/Azanul/peer-pressure/tui/style"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -91,12 +91,12 @@ func (m createFormModel) View() string {
 
  %s
 `,
-		tui.NNInputStyle("Name"),
+		style.NNInputStyle("Name"),
 		m.inputs[0].View(),
-		tui.NNInputStyle("Rendezvous"),
+		style.NNInputStyle("Rendezvous"),
 		m.inputs[1].View(),
-		tui.NNContinueStyle("Continue ->"),
-	) + "\n" + tui.FooterStyle(footer)
+		style.NNContinueStyle("Continue ->"),
+	) + "\n" + style.FooterStyle(footer)
 }
 
 func createNewNode(name string, rendezvous string) {

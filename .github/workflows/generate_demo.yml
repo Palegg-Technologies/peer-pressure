@@ -28,9 +28,9 @@ jobs:
     needs: [setup]
     steps:
     - name: Record receiver
-        uses: charmbracelet/vhs-action@v2.0.0
-        with:
-          path: 'receiver_demo.tape'
+      uses: charmbracelet/vhs-action@v2.0.0
+      with:
+        path: 'receiver_demo.tape'
 
   record-sender:
     runs-on: ubuntu-latest
@@ -40,9 +40,9 @@ jobs:
       run: curl -LJO http://ipv4.download.thinkbroadband.com/200MB.zip
 
     - name: Record sender
-        uses: charmbracelet/vhs-action@v2.0.0
-        with:
-          path: 'sender_demo.tape'
+      uses: charmbracelet/vhs-action@v2.0.0
+      with:
+        path: 'sender_demo.tape'
 
   Commit:
     runs-on: ubuntu-latest

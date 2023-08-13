@@ -22,16 +22,15 @@ jobs:
 
     - name: Build
       run: go build .
-
-    - name: Install VHS
-      run: go install github.com/charmbracelet/vhs@latest
   
   record-receiver:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
     - name: Record receiver
-      run: vhs receiver_demo.tape
+        uses: charmbracelet/vhs-action@v2.0.0
+        with:
+          path: 'receiver_demo.tape'
 
   record-sender:
     runs-on: ubuntu-latest
@@ -41,7 +40,9 @@ jobs:
       run: curl -LJO http://ipv4.download.thinkbroadband.com/200MB.zip
 
     - name: Record sender
-      run: vhs sender_demo.tape
+        uses: charmbracelet/vhs-action@v2.0.0
+        with:
+          path: 'sender_demo.tape'
 
   Commit:
     runs-on: ubuntu-latest

@@ -72,8 +72,16 @@ jobs:
     steps:
     - name: Check out repo
       uses: actions/checkout@v3
-      
+
     - uses: actions/download-artifact@v3
+      with:
+        name: sender_demo
+        path: sender_demo.gif
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: receiver_demo
+        path: receiver_demo.gif
 
     - run: |-
         git config --global user.email "actions@users.noreply.github.com"

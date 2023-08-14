@@ -7,7 +7,7 @@ Enter
 # Create node
 Sleep 1s
 Enter
-Type "rcv"
+Type "snd"
 Tab
 Type "testPP"
 Sleep 1.5s
@@ -20,7 +20,7 @@ Enter
 Sleep 1s
 Enter
 Sleep 1s
-Escape
+Left
 Left
 Down 3
 Enter

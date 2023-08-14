@@ -90,7 +90,7 @@ STREAM_LOOP:
 	}
 	eventCh <- peer.Event{
 		Type: 1,
-		Data: nil,
+		Data: float64(-1),
 	}
 }
 
@@ -116,18 +116,16 @@ STREAM_LOOP:
 			log.Println("Error reading from buffer")
 			return
 		}
-
 		_, err = writer.Write(chunk.Data)
 		if err != nil {
 			log.Println(err)
 		}
 		index.Progress += 1
 		index.Save()
-
-		eventCh <- peer.Event{
-			Type: 1,
-			Data: index.Progress,
-		}
+		// eventCh <- peer.Event{
+		// 	Type: 1,
+		// 	Data: index.Progress,
+		// }
 		select {
 		case cmd := <-cmdCh:
 			if cmd == peer.Pause {
@@ -139,10 +137,10 @@ STREAM_LOOP:
 		default:
 		}
 	}
-	eventCh <- peer.Event{
-		Type: 1,
-		Data: nil,
-	}
+	// eventCh <- peer.Event{
+	// 	Type: 1,
+	// 	Data: -1,
+	// }
 
-	writer.Flush()
+	log.Debugln(writer.Flush())
 }

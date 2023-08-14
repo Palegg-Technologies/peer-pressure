@@ -1,9 +1,19 @@
 Output sender_demo.gif
 
-Sleep 500ms
 Type "./peer-pressure"
-Sleep 500ms
+Sleep 1s
 Enter
+
+# Create node
+Sleep 1s
+Enter
+Type "rcv"
+Tab
+Type "testPP"
+Sleep 1.5s
+Enter
+
+# Start sender
 Sleep 1s
 Down
 Enter

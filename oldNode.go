@@ -82,7 +82,7 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 						if data < 0 {
 							return
 						} else {
-							crrNode.transfer.TempPerc = float64(minInt(data, 1))
+							crrNode.transfer.TempPerc = float64(min(data, 1))
 						}
 					}
 				}()

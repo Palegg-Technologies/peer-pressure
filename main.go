@@ -349,14 +349,7 @@ func main() {
 	}
 }
 
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func minInt(a, b int32) int32 {
+func min[T float64 | float32 | int | int64 | int32 | int16 | int8](a, b T) T {
 	if a < b {
 		return a
 	}

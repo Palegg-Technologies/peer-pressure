@@ -29,13 +29,13 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, 
 	str := pb.Marshal(index)
 	_, err := rw.Write(str)
 	if err != nil {
-		log.Println("Error writing to buffer")
-		panic(err)
+		handleError(eventCh, err)
+		return
 	}
 	err = rw.Flush()
 	if err != nil {
-		log.Println("Error flushing buffer")
-		panic(err)
+		handleError(eventCh, err)
+		return
 	}
 
 	cr := &pb.ChunkRequest{}
@@ -45,7 +45,8 @@ func FileToStream(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, 
 	newOff, err := file.Seek(int64(partNum/chunkSize), 0)
 	log.Debugln("New offset:", newOff)
 	if err != nil {
-		log.Panicln(err)
+		handleError(eventCh, err)
+		return
 	}
 
 STREAM_LOOP:
@@ -54,8 +55,8 @@ STREAM_LOOP:
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Println("Error reading from stdin")
-			panic(err)
+			handleError(eventCh, err)
+			return
 		}
 
 		partNum++
@@ -66,12 +67,14 @@ STREAM_LOOP:
 		str := pb.Marshal(chunk)
 		_, err = rw.Write(str)
 		if err != nil {
-			log.Panicln("Error writing to buffer:", err)
+			handleError(eventCh, err)
+			return
 		}
 
 		err = rw.Flush()
 		if err != nil {
-			log.Panicln("Error flushing buffer:", err)
+			handleError(eventCh, err)
+			return
 		}
 		pushEvent(eventCh, 1, float64(partNum)*chunkSize/float64(fileInfo.Size()))
 		select {
@@ -93,10 +96,15 @@ func StreamToFile(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, 
 	index := pb.Index{}
 	IndexFile, err := os.ReadFile(indexPath)
 	if err != nil {
+		handleError(eventCh, err)
 		return
 	}
 	defer file.Close()
 	proto.Unmarshal(IndexFile, &index)
+	if err != nil {
+		handleError(eventCh, err)
+		return
+	}
 
 	writer := bufio.NewWriter(file)
 STREAM_LOOP:
@@ -107,12 +115,13 @@ STREAM_LOOP:
 			log.Printf("%s done writing", file.Name())
 			break
 		} else if err != nil {
-			log.Println("Error reading from buffer")
+			handleError(eventCh, err)
 			return
 		}
 		_, err = writer.Write(chunk.Data)
 		if err != nil {
-			log.Println(err)
+			handleError(eventCh, err)
+			return
 		}
 		index.Progress += 1
 		index.Save()
@@ -135,9 +144,13 @@ STREAM_LOOP:
 	log.Debugln(writer.Flush())
 }
 
-func pushEvent[T int32 | float64](ch chan peer.Event, msgType peer.SignalType, data T) {
+func pushEvent[T int32 | float64 | string](ch chan peer.Event, msgType peer.SignalType, data T) {
 	ch <- peer.Event{
 		Type: msgType,
 		Data: data,
 	}
+}
+
+func handleError(ch chan peer.Event, err error) {
+	pushEvent(ch, peer.Error, err.Error())
 }

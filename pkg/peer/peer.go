@@ -190,6 +190,9 @@ func (p *Peer) GetRendezvous() string {
 type SignalType int8
 
 const (
+	Progress SignalType = iota
+	Error
+
 	Pause Command = iota
 	Continue
 	Stop

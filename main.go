@@ -275,7 +275,7 @@ func (m model) View() string {
 		s += "\n\n" + crrNode.transfer.Progress.View()
 		footer := ""
 		if crrNode.transfer.Paused() {
-			footer = "\t\tPAUSED\n\n"
+			footer = "\n\t\tPAUSED\n\n"
 			footer += "Press space to continue"
 		} else {
 			footer += "Press space to pause"
@@ -283,7 +283,15 @@ func (m model) View() string {
 		s += style.FooterStyle(footer)
 
 	case receiveLoader:
-		tea.Println("Not yet implemented")
+		s += "\n\n" + crrNode.transfer.Progress.View()
+		footer := ""
+		if crrNode.transfer.Paused() {
+			footer = "\n\t\tPAUSED\n\n"
+			footer += "Press space to continue"
+		} else {
+			footer += "Press space to pause"
+		}
+		s += style.FooterStyle(footer)
 	}
 
 	// Send the UI for rendering
@@ -342,6 +350,13 @@ func main() {
 }
 
 func min(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func minInt(a, b int32) int32 {
 	if a < b {
 		return a
 	}

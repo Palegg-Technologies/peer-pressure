@@ -76,6 +76,16 @@ func (m *oldNodeMenuModel) Update(parent *model, msg tea.Msg) (tea.Model, tea.Cm
 
 			case "Receive":
 				parent.state += 3
+				go func() {
+					for c := range crrNode.transfer.EventCh {
+						data := c.Data.(int32)
+						if data < 0 {
+							return
+						} else {
+							crrNode.transfer.TempPerc = float64(minInt(data, 1))
+						}
+					}
+				}()
 				err := receiveFile(context.Background(), m.name, m.transfer.EventCh, m.transfer.CommandCh)
 				if err != nil {
 					fmt.Println(style.ErrorTextStyle(err.Error()))

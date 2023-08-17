@@ -122,10 +122,10 @@ STREAM_LOOP:
 		}
 		index.Progress += 1
 		index.Save()
-		// eventCh <- peer.Event{
-		// 	Type: 1,
-		// 	Data: index.Progress,
-		// }
+		eventCh <- peer.Event{
+			Type: 1,
+			Data: index.Progress,
+		}
 		select {
 		case cmd := <-cmdCh:
 			if cmd == peer.Pause {
@@ -137,10 +137,10 @@ STREAM_LOOP:
 		default:
 		}
 	}
-	// eventCh <- peer.Event{
-	// 	Type: 1,
-	// 	Data: -1,
-	// }
+	eventCh <- peer.Event{
+		Type: 1,
+		Data: int32(-1),
+	}
 
 	log.Debugln(writer.Flush())
 }

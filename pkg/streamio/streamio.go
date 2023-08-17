@@ -73,10 +73,7 @@ STREAM_LOOP:
 		if err != nil {
 			log.Panicln("Error flushing buffer:", err)
 		}
-		eventCh <- peer.Event{
-			Type: 1,
-			Data: float64(partNum) * chunkSize / float64(fileInfo.Size()),
-		}
+		pushEvent(eventCh, 1, float64(partNum)*chunkSize/float64(fileInfo.Size()))
 		select {
 		case cmd := <-cmdCh:
 			if cmd == peer.Pause {
@@ -88,10 +85,7 @@ STREAM_LOOP:
 		default:
 		}
 	}
-	eventCh <- peer.Event{
-		Type: 1,
-		Data: float64(-1),
-	}
+	pushEvent(eventCh, 1, float64(-1))
 }
 
 func StreamToFile(rw *bufio.ReadWriter, file *os.File, eventCh chan peer.Event, cmdCh chan peer.Command) {
@@ -122,10 +116,9 @@ STREAM_LOOP:
 		}
 		index.Progress += 1
 		index.Save()
-		eventCh <- peer.Event{
-			Type: 1,
-			Data: index.Progress,
-		}
+
+		pushEvent(eventCh, 1, index.Progress)
+
 		select {
 		case cmd := <-cmdCh:
 			if cmd == peer.Pause {
@@ -137,10 +130,14 @@ STREAM_LOOP:
 		default:
 		}
 	}
-	eventCh <- peer.Event{
-		Type: 1,
-		Data: int32(-1),
-	}
+	pushEvent(eventCh, 1, int32(-1))
 
 	log.Debugln(writer.Flush())
+}
+
+func pushEvent[T int32 | float64](ch chan peer.Event, msgType peer.SignalType, data T) {
+	ch <- peer.Event{
+		Type: msgType,
+		Data: data,
+	}
 }
